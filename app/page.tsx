@@ -231,7 +231,7 @@ export default function Home() {
       {/* ══ FEATURES ══ */}
       <section id="features" className="py-24 px-6 scroll-mt-20">
         <div className="max-w-5xl mx-auto">
-          <FadeIn className="text-center mb-14">
+          <FadeIn className="text-center mb-16">
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/30 mb-3">Core Capabilities</p>
             <h2
               className="text-3xl sm:text-4xl font-bold"
@@ -247,35 +247,54 @@ export default function Home() {
             </h2>
           </FadeIn>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2">
             {[
               {
                 icon: "⚡",
                 title: "Grounded Responses",
                 desc: "Every answer is generated exclusively from retrieved document content. If it's not in your docs, FlashFetch says so — never guesses.",
+                accent: "from-amber-500/20 to-transparent",
+                border: "border-amber-500/15",
+                dot: "bg-amber-400",
               },
               {
                 icon: "🔍",
                 title: "Semantic Vector Search",
                 desc: "Documents are embedded with transformer models. Finds conceptually similar passages even when the exact words don't match.",
+                accent: "from-blue-500/20 to-transparent",
+                border: "border-blue-500/15",
+                dot: "bg-blue-400",
               },
               {
                 icon: "📎",
                 title: "Source Citations",
                 desc: "Every response includes the source document, the exact text snippet used, and a confidence score — fully transparent retrieval.",
+                accent: "from-emerald-500/20 to-transparent",
+                border: "border-emerald-500/15",
+                dot: "bg-emerald-400",
               },
               {
                 icon: "🚦",
                 title: "Honest Fallback",
-                desc: "When no relevant content is found, FlashFetch responds: \"I could not find this in the provided documents.\" No fabricated citations.",
+                desc: 'When no relevant content is found, FlashFetch responds: "I could not find this in the provided documents." No fabricated citations.',
+                accent: "from-purple-500/20 to-transparent",
+                border: "border-purple-500/15",
+                dot: "bg-purple-400",
               },
             ].map((feat, i) => (
               <FadeIn key={feat.title} delay={i * 70} direction="up">
-                <div className="group flex flex-col gap-4 rounded-xl border border-white/8 bg-white/3 p-5 transition-all duration-300 hover:border-white/18 hover:bg-white/5 h-full">
-                  <span className="text-2xl">{feat.icon}</span>
+                <div className={`group relative flex flex-col gap-5 rounded-2xl border ${feat.border} bg-white/2 p-7 transition-all duration-300 hover:bg-white/4 h-full overflow-hidden`}>
+                  {/* top glow */}
+                  <div className={`absolute inset-x-0 top-0 h-px bg-linear-to-r ${feat.accent}`} />
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/6 text-xl">
+                      {feat.icon}
+                    </div>
+                    <div className={`h-1.5 w-1.5 rounded-full ${feat.dot}`} />
+                  </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-white mb-1.5">{feat.title}</h3>
-                    <p className="text-xs text-white/45 leading-relaxed">{feat.desc}</p>
+                    <h3 className="text-base font-semibold text-white mb-2">{feat.title}</h3>
+                    <p className="text-sm text-white/40 leading-relaxed">{feat.desc}</p>
                   </div>
                 </div>
               </FadeIn>
@@ -287,7 +306,7 @@ export default function Home() {
       {/* ══ HOW IT WORKS ══ */}
       <section id="how-it-works" className="py-24 px-6 scroll-mt-20 border-t border-white/6">
         <div className="max-w-4xl mx-auto">
-          <FadeIn className="text-center mb-14">
+          <FadeIn className="text-center mb-16">
             <p className="text-xs font-semibold uppercase tracking-[0.22em] text-white/30 mb-3">Process</p>
             <h2
               className="text-3xl sm:text-4xl font-bold"
@@ -303,26 +322,34 @@ export default function Home() {
             </h2>
           </FadeIn>
 
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              { step: "01", emoji: "📂", title: "Upload Documents", desc: "Drop in your PDFs, TXT files, or Markdown docs into the docs/ folder." },
-              { step: "02", emoji: "⚙️", title: "Auto Index",       desc: "Documents are chunked, embedded via Sentence Transformers, and stored in a FAISS vector index." },
-              { step: "03", emoji: "💬", title: "Ask in Plain English", desc: "Send a natural language question via the chat interface or API POST request." },
-              { step: "04", emoji: "✅", title: "Cited Answer",     desc: "Receive a short answer paragraph, source documents, text snippets, and a confidence rating." },
-            ].map((item, i) => (
-              <FadeIn key={item.step} delay={i * 80} direction="up">
-                <div className="rounded-xl border border-white/8 bg-white/2 p-5 flex flex-col gap-3 h-full relative">
-                  <div className="flex items-start justify-between">
-                    <span className="text-xl">{item.emoji}</span>
-                    <span className="text-2xl font-black text-white/8 select-none">{item.step}</span>
+          <div className="relative">
+            {/* connector line — desktop */}
+            <div className="hidden lg:block absolute top-8 left-[calc(12.5%-1px)] right-[calc(12.5%-1px)] h-px bg-linear-to-r from-transparent via-white/10 to-transparent" />
+
+            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                { step: "01", icon: "📂", title: "Upload",       desc: "Drop PDFs, TXT, or Markdown files into the interface or drag & drop.", color: "text-amber-400",   ring: "ring-amber-400/20"  },
+                { step: "02", icon: "⚙️",  title: "Auto Index",   desc: "Chunks are embedded with Sentence Transformers and stored in FAISS.", color: "text-blue-400",    ring: "ring-blue-400/20"   },
+                { step: "03", icon: "💬", title: "Ask Anything",  desc: "Type a natural language question — no special syntax needed.",        color: "text-emerald-400", ring: "ring-emerald-400/20" },
+                { step: "04", icon: "✅", title: "Cited Answer",  desc: "Get a grounded answer with source snippets and a confidence score.",  color: "text-purple-400",  ring: "ring-purple-400/20"  },
+              ].map((item, i) => (
+                <FadeIn key={item.step} delay={i * 90} direction="up">
+                  <div className="flex flex-col items-center text-center gap-4">
+                    {/* Step circle */}
+                    <div className={`relative flex h-16 w-16 items-center justify-center rounded-2xl border border-white/10 bg-[#0f0f0f] ring-4 ${item.ring} text-2xl shadow-lg`}>
+                      {item.icon}
+                      <span className={`absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-black border border-white/10 text-[10px] font-bold ${item.color}`}>
+                        {item.step}
+                      </span>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-white mb-1.5">{item.title}</h3>
+                      <p className="text-xs text-white/40 leading-relaxed">{item.desc}</p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-sm font-semibold text-white mb-1">{item.title}</h3>
-                    <p className="text-xs text-white/40 leading-relaxed">{item.desc}</p>
-                  </div>
-                </div>
-              </FadeIn>
-            ))}
+                </FadeIn>
+              ))}
+            </div>
           </div>
         </div>
       </section>
