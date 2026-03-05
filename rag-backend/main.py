@@ -40,8 +40,13 @@ app.add_middleware(
 )
 
 # ── Pydantic models ────────────────────────────────────────
+class HistoryTurn(BaseModel):
+    role:    str  # "user" | "assistant"
+    content: str
+
 class Query(BaseModel):
-    question: str = Field(..., min_length=3, description="The question to answer")
+    question: str               = Field(..., min_length=3, description="The question to answer")
+    history:  list[HistoryTurn] = Field(default_factory=list, description="Previous conversation turns for multi-turn memory")
 
 class Source(BaseModel):
     document:  str
@@ -63,7 +68,8 @@ def ask(query: Query):
     """
     try:
         retrieved = retrieve(query.question)
-        result    = generate(query.question, retrieved)
+        history   = [t.model_dump() for t in query.history]
+        result    = generate(query.question, retrieved, history)
         return result
     except FileNotFoundError as e:
         raise HTTPException(status_code=503, detail=str(e))

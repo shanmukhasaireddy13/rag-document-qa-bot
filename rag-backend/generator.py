@@ -49,7 +49,7 @@ def get_confidence(top_score: float) -> str:
     return "low"
 
 
-def generate(query: str, retrieved: list[dict]) -> dict:
+def generate(query: str, retrieved: list[dict], history: list[dict] | None = None) -> dict:
     """
     Build an answer from retrieved chunks using the Groq LLM.
 
@@ -84,18 +84,31 @@ def generate(query: str, retrieved: list[dict]) -> dict:
         )
     context = "\n\n---\n\n".join(context_parts)
 
+    # ── Build conversation history prefix ──────────────────
+    history_prefix = ""
+    if history:
+        recent = [t for t in history if t.get("role") in ("user", "assistant")][-6:]
+        if recent:
+            lines = []
+            for turn in recent:
+                prefix = "User" if turn["role"] == "user" else "Assistant"
+                lines.append(f"{prefix}: {turn['content'].strip()}")
+            history_prefix = "Previous conversation:\n" + "\n".join(lines) + "\n\n"
+
     # ── System prompt ──────────────────────────────────────
     system_prompt = (
         "You are a strict document Q&A assistant. "
         "Rules you MUST follow:\n"
-        "1. Answer ONLY using the context below — no outside knowledge.\n"
+        "1. Answer ONLY using the provided document context — no outside knowledge.\n"
         "2. Be direct and concise. Avoid padding or filler phrases.\n"
-        "3. If the exact answer is not in the context, respond EXACTLY with: "
+        "3. You may use the previous conversation for context, but base answers on the documents.\n"
+        "4. If the exact answer is not in the context, respond EXACTLY with: "
         f'"{NO_ANSWER}"\n'
-        "4. Never guess, infer beyond what is written, or fabricate details."
+        "5. Never guess, infer beyond what is written, or fabricate details."
     )
 
     user_prompt = (
+        f"{history_prefix}"
         f"Context:\n{context}\n\n"
         f"Question: {query}\n\n"
         "Answer (strictly from the context — no outside knowledge):"
