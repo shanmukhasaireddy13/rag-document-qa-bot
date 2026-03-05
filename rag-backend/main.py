@@ -13,6 +13,10 @@ GET  /health  →  { "status": "ok", "vectors": <int> }
 
 import os
 import shutil
+import io
+import re
+import httpx
+import fitz  # PyMuPDF
 
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
@@ -53,6 +57,9 @@ class InlineQuery(BaseModel):
     context_text: str               = Field(..., description="Raw text from the open file / page")
     filename:     str               = Field(default="inline document")
     history:      list[HistoryTurn] = Field(default_factory=list)
+
+class UrlExtractRequest(BaseModel):
+    url: str = Field(..., description="Any URL: Google Drive share link, direct PDF, web page")
 
 class Source(BaseModel):
     document:  str
@@ -100,6 +107,89 @@ def ask_with_context(query: InlineQuery):
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal error: {e}")
+
+
+@app.post("/extract-url")
+def extract_url(req: UrlExtractRequest):
+    """
+    Download any URL and extract its text content.
+    Supports Google Drive share links, direct PDF URLs, plain text URLs.
+    Returns { filename, text, char_count } for use with /ask-with-context.
+    """
+    url = req.url.strip()
+
+    # ── Convert Google Drive share/view/preview URL → direct download ─────
+    # Patterns:
+    #   https://drive.google.com/file/d/FILE_ID/view
+    #   https://drive.google.com/file/d/FILE_ID/preview
+    #   https://drive.google.com/open?id=FILE_ID
+    #   https://docs.google.com/document/d/FILE_ID/edit
+    drive_match = re.search(
+        r"(?:drive\.google\.com/file/d/|docs\.google\.com/\w+/d/)([\w-]+)",
+        url
+    )
+    open_match  = re.search(r"drive\.google\.com/open\?id=([\w-]+)", url)
+    is_drive    = bool(drive_match or open_match)
+    file_id     = (drive_match or open_match).group(1) if (drive_match or open_match) else None
+
+    filename = "document"
+    raw_bytes = b""
+    content_type = ""
+
+    try:
+        if is_drive and file_id:
+            download_url = f"https://drive.google.com/uc?export=download&id={file_id}"
+            filename = f"drive_{file_id[:8]}.pdf"
+            with httpx.Client(follow_redirects=True, timeout=30) as client:
+                r = client.get(download_url)
+                if r.status_code != 200:
+                    raise HTTPException(status_code=502, detail=f"Google Drive returned {r.status_code}. Make sure the file is shared as 'Anyone with the link'.")
+                raw_bytes    = r.content
+                content_type = r.headers.get("content-type", "")
+                # Try to get real filename from Content-Disposition
+                cd = r.headers.get("content-disposition", "")
+                fn_match = re.search(r'filename=["\']?([^"\'\n;]+)', cd)
+                if fn_match:
+                    filename = fn_match.group(1).strip()
+        else:
+            with httpx.Client(follow_redirects=True, timeout=30) as client:
+                r = client.get(url)
+                if r.status_code != 200:
+                    raise HTTPException(status_code=502, detail=f"URL returned {r.status_code}")
+                raw_bytes    = r.content
+                content_type = r.headers.get("content-type", "")
+                filename     = url.split("/")[-1].split("?")[0] or "document"
+
+    except httpx.RequestError as e:
+        raise HTTPException(status_code=502, detail=f"Could not fetch URL: {e}")
+
+    # ── Extract text ──────────────────────────────────────────────────────
+    is_pdf = "pdf" in content_type.lower() or filename.lower().endswith(".pdf")
+
+    if is_pdf:
+        try:
+            doc  = fitz.open(stream=io.BytesIO(raw_bytes), filetype="pdf")
+            text = "\n".join(page.get_text() for page in doc)
+            doc.close()
+        except Exception as e:
+            raise HTTPException(status_code=422, detail=f"PDF text extraction failed: {e}")
+    else:
+        # Plain text / HTML — decode and strip HTML tags roughly
+        text = raw_bytes.decode("utf-8", errors="ignore")
+        # Strip HTML if needed
+        if "<html" in text.lower() or "<!doctype" in text.lower():
+            text = re.sub(r"<[^>]+>", " ", text)
+            text = re.sub(r"\s{2,}", " ", text)
+
+    text = text.strip()
+    if not text:
+        raise HTTPException(status_code=422, detail="No readable text found in the document.")
+
+    return {
+        "filename":   filename,
+        "text":       text[:80000],   # cap at 80k chars
+        "char_count": len(text),
+    }
 
 
 @app.get("/health")

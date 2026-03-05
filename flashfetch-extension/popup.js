@@ -37,7 +37,7 @@ chrome.storage.local.get(["ff_token", "ff_api_url", "ff_prefill"], (data) => {
   }
 });
 
-// ─── Auto-detect open file ─────────────────────────────────────────────────────
+// ─── Auto-detect open file / Drive / PDF URL ──────────────────────────────────
 function detectOpenFile() {
   chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
     const tab = tabs[0];
@@ -45,40 +45,91 @@ function detectOpenFile() {
 
     const url      = tab.url;
     const isFile   = url.startsWith("file://");
-    const isPDF    = url.toLowerCase().endsWith(".pdf");
-    // Decode %20 etc in filename
     const rawName  = url.split("/").pop().split("?")[0] || "document";
     const fileName = decodeURIComponent(rawName);
 
-    // Only handle local files
-    if (!isFile) return;
+    // ── Google Drive / Docs / Slides / PDF URL ────────────────────────────
+    const isDrive = url.includes("drive.google.com") || url.includes("docs.google.com");
+    const isPDFUrl = !isFile && url.toLowerCase().endsWith(".pdf");
 
-    if (isPDF) {
-      // Chrome PDF viewer blocks content scripts — show helpful UI
-      showFileBanner(fileName, "pdf");
-      clearEmptyState();
-      appendPDFHelp(fileName);
+    if (isDrive || isPDFUrl) {
+      loadFromUrl(url, isDrive ? "Google Drive" : fileName);
       return;
     }
 
-    // Local text file — send message to content script
-    chrome.tabs.sendMessage(tab.id, { action: "getFileContext" }, (res) => {
-      if (chrome.runtime.lastError || !res || !res.text) {
-        // Content script not injected yet — inject manually
-        chrome.scripting.executeScript(
-          { target: { tabId: tab.id }, files: ["content.js"] },
-          () => {
-            if (chrome.runtime.lastError) return;
-            chrome.tabs.sendMessage(tab.id, { action: "getFileContext" }, (res2) => {
-              if (res2 && res2.text) setFileContext(res2);
-            });
+    // ── Local file via file:// ─────────────────────────────────────────────
+    if (isFile) {
+      const isPDF = fileName.toLowerCase().endsWith(".pdf");
+      if (isPDF) {
+        // local PDF: use backend to fetch and extract
+        loadFromUrl(url, fileName);
+      } else {
+        // plain text file — read via content script directly, no backend needed
+        chrome.tabs.sendMessage(tab.id, { action: "getFileContext" }, (res) => {
+          if (chrome.runtime.lastError || !res || !res.text) {
+            chrome.scripting.executeScript(
+              { target: { tabId: tab.id }, files: ["content.js"] },
+              () => {
+                if (chrome.runtime.lastError) return;
+                chrome.tabs.sendMessage(tab.id, { action: "getFileContext" }, (res2) => {
+                  if (res2 && res2.text) setFileContext(res2);
+                });
+              }
+            );
+            return;
           }
-        );
-        return;
+          setFileContext(res);
+        });
       }
-      setFileContext(res);
-    });
+    }
   });
+}
+
+// ── Load any URL via backend /extract-url ────────────────────────────────────
+function loadFromUrl(url, label) {
+  chrome.storage.local.get(["ff_token", "ff_api_url"], async (data) => {
+    const apiUrl = data.ff_api_url || DEFAULT_API;
+
+    clearEmptyState();
+    showLoadingBanner(label);
+    setStatus(`Reading ${label}…`);
+
+    try {
+      const headers = { "Content-Type": "application/json" };
+      if (data.ff_token) headers["Authorization"] = `Bearer ${data.ff_token}`;
+
+      const res = await fetch(`${apiUrl}/extract-url`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ url }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ detail: res.statusText }));
+        throw new Error(err.detail || res.statusText);
+      }
+
+      const json = await res.json();
+      hideStatus();
+
+      setFileContext({
+        title:    json.filename,
+        text:     json.text,
+        fileType: json.filename.toLowerCase().endsWith(".pdf") ? "pdf" : "txt",
+      });
+
+    } catch (err) {
+      hideStatus();
+      hideBanner();
+      clearEmptyState();
+      appendPDFHelp(label, err.message);
+    }
+  });
+}
+
+function showLoadingBanner(label) {
+  fileBannerName.textContent = `⏳ Loading ${label}…`;
+  fileBanner.classList.remove("hidden");
 }
 
 function setFileContext(res) {
@@ -91,28 +142,36 @@ function setFileContext(res) {
   questionInput.focus();
 }
 
-function appendPDFHelp(fileName) {
+function appendPDFHelp(fileName, errorMsg) {
   const div = document.createElement("div");
   div.className = "msg assistant";
 
   const bubble = document.createElement("div");
   bubble.className = "bubble";
-  bubble.innerHTML = `
-    <strong>📕 ${fileName}</strong><br/><br/>
-    Chrome's PDF viewer doesn't allow extensions to read PDF text directly.<br/><br/>
-    <strong>To ask questions about this PDF:</strong><br/>
-    1. Click <strong>⬆</strong> (Upload) above to send it to FlashFetch<br/>
-    2. Then ask your question here
-  `;
+
+  if (errorMsg && errorMsg.includes("Anyone with the link")) {
+    bubble.innerHTML = `
+      <strong>📕 ${fileName}</strong><br/><br/>
+      <strong>Google Drive file is not public.</strong><br/><br/>
+      To fix: Right-click the file in Drive → Share → <em>"Anyone with the link"</em> can view → Copy link → try again.
+    `;
+  } else if (errorMsg) {
+    bubble.innerHTML = `
+      <strong>📕 ${fileName}</strong><br/><br/>
+      Could not read this document: <em>${errorMsg}</em><br/><br/>
+      Make sure the file is publicly shared or try uploading it directly using the ⬆ button.
+    `;
+  } else {
+    bubble.innerHTML = `
+      <strong>📕 ${fileName}</strong><br/><br/>
+      Chrome's PDF viewer blocks extensions from reading PDF text.<br/><br/>
+      <strong>Options:</strong><br/>
+      • Open a <strong>Google Drive link</strong> instead — FlashFetch reads it instantly<br/>
+      • Click <strong>⬆</strong> above to upload this PDF to your document library
+    `;
+  }
+
   div.appendChild(bubble);
-
-  const uploadBtn = document.createElement("button");
-  uploadBtn.className = "btn-primary";
-  uploadBtn.style.cssText = "margin-top:10px;font-size:12px;padding:8px;";
-  uploadBtn.textContent = "⬆  Upload this PDF now";
-  uploadBtn.addEventListener("click", () => savePageBtn.click());
-  div.appendChild(uploadBtn);
-
   messagesEl.appendChild(div);
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
@@ -122,6 +181,10 @@ function showFileBanner(filename, fileType) {
   const icon = fileType === "pdf" ? "📕" : fileType === "webpage" ? "🌐" : "📄";
   fileBannerName.textContent = `${icon} ${filename}`;
   fileBanner.classList.remove("hidden");
+}
+
+function hideBanner() {
+  fileBanner.classList.add("hidden");
 }
 
 fileBannerClear.addEventListener("click", () => {
