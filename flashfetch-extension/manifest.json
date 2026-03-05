@@ -1,0 +1,39 @@
+{
+  "manifest_version": 3,
+  "name": "FlashFetch",
+  "version": "1.0.0",
+  "description": "Ask your RAG documents anything — right from your browser.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png"
+    },
+    "default_title": "FlashFetch"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "permissions": [
+    "activeTab",
+    "storage",
+    "contextMenus",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://rag-document-qa-bot-production.up.railway.app/*",
+    "http://localhost:8000/*"
+  ]
+}

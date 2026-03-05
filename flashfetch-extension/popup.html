@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FlashFetch</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <!-- Auth screen -->
+  <div id="auth-screen" class="screen hidden">
+    <div class="logo-row">
+      <span class="logo-dot"></span>
+      <span class="logo-text">FlashFetch</span>
+    </div>
+    <p class="tagline">Sign in to start asking your documents</p>
+    <div class="field-group">
+      <input id="api-url-input" type="text" placeholder="API URL (default: localhost:8000)" />
+      <input id="token-input" type="password" placeholder="Paste your Supabase JWT token" />
+    </div>
+    <button id="save-token-btn" class="btn-primary">Connect</button>
+    <p class="hint">
+      Get your token from
+      <a href="https://top-devs.vercel.app/chat" target="_blank">FlashFetch</a>
+      → open DevTools → Application → Local Storage → supabase token
+    </p>
+  </div>
+
+  <!-- Main chat screen -->
+  <div id="chat-screen" class="screen hidden">
+    <div class="header">
+      <div class="logo-row">
+        <span class="logo-dot"></span>
+        <span class="logo-text">FlashFetch</span>
+      </div>
+      <div class="header-actions">
+        <button id="save-page-btn" class="icon-btn" title="Save this page as a document">⬆</button>
+        <button id="logout-btn" class="icon-btn" title="Disconnect">✕</button>
+      </div>
+    </div>
+
+    <div id="messages" class="messages">
+      <div class="empty-state">
+        <p>Ask anything about your documents.</p>
+        <div class="suggestions">
+          <button class="suggestion-chip" data-q="Summarize my documents">Summarize documents</button>
+          <button class="suggestion-chip" data-q="What are the key topics?">Key topics</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="status-bar" class="status-bar hidden"></div>
+
+    <div class="input-row">
+      <input id="question-input" type="text" placeholder="Ask a question…" autocomplete="off" />
+      <button id="send-btn" class="btn-send">→</button>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
