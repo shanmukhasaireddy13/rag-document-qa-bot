@@ -7,23 +7,17 @@
   <link rel="stylesheet" href="popup.css" />
 </head>
 <body>
-  <!-- Auth screen -->
+  <!-- Settings screen (optional, hidden by default) -->
   <div id="auth-screen" class="screen hidden">
     <div class="logo-row">
       <span class="logo-dot"></span>
       <span class="logo-text">FlashFetch</span>
     </div>
-    <p class="tagline">Sign in to start asking your documents</p>
+    <p class="tagline">Configure API URL (optional)</p>
     <div class="field-group">
-      <input id="api-url-input" type="text" placeholder="API URL (default: localhost:8000)" />
-      <input id="token-input" type="password" placeholder="Paste your Supabase JWT token" />
+      <input id="api-url-input" type="text" placeholder="API URL (default: Railway backend)" />
     </div>
-    <button id="save-token-btn" class="btn-primary">Connect</button>
-    <p class="hint">
-      Get your token from
-      <a href="https://top-devs.vercel.app/chat" target="_blank">FlashFetch</a>
-      → open DevTools → Application → Local Storage → supabase token
-    </p>
+    <button id="save-token-btn" class="btn-primary">Save</button>
   </div>
 
   <!-- Main chat screen -->
