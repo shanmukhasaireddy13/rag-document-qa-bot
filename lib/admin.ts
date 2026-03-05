@@ -28,9 +28,10 @@ export interface DailyCount {
 }
 
 export interface RecentSession {
-  id:           string;
-  title:        string;
-  created_at:   string;
+  id:            string;
+  user_id:       string;
+  title:         string;
+  created_at:    string;
   message_count: number;
 }
 
@@ -79,26 +80,12 @@ export async function fetchDailyQueries(): Promise<DailyCount[]> {
   return (data ?? []) as DailyCount[];
 }
 
-// ── Recent sessions ─────────────────────────────────────────
+// ── Recent sessions (all users, admin-only RPC) ───────────────────
 export async function fetchRecentSessions(limit = 20): Promise<RecentSession[]> {
   const supabase = createClient();
   if (!supabase) return [];
-  const { data: sessions, error } = await supabase
-    .from("chat_sessions")
-    .select("id, title, created_at")
-    .order("created_at", { ascending: false })
-    .limit(limit);
+  const { data, error } = await supabase
+    .rpc("get_all_sessions", { row_limit: limit });
   if (error) { console.warn("[admin] fetchRecentSessions:", error.message); return []; }
-
-  // Fetch message counts for each session
-  const withCounts = await Promise.all(
-    (sessions ?? []).map(async (s) => {
-      const { count } = await supabase!
-        .from("chat_messages")
-        .select("id", { count: "exact", head: true })
-        .eq("session_id", s.id);
-      return { ...s, message_count: count ?? 0 };
-    }),
-  );
-  return withCounts as RecentSession[];
+  return (data ?? []) as RecentSession[];
 }

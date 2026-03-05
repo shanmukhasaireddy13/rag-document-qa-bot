@@ -117,3 +117,45 @@ $$;
 GRANT EXECUTE ON FUNCTION public.get_admin_analytics()     TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_admin_top_documents() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.get_admin_daily_queries() TO authenticated;
+
+-- 8. Allow admins to SELECT all rows in chat tables ──────────
+--    Without these policies the views only see the calling user's rows.
+--    With SECURITY DEFINER the functions run as postgres (bypasses RLS),
+--    but direct .from() calls need explicit admin-read policies.
+
+DROP POLICY IF EXISTS "admins_read_all_sessions" ON public.chat_sessions;
+CREATE POLICY "admins_read_all_sessions" ON public.chat_sessions
+  FOR SELECT USING (public.is_admin());
+
+DROP POLICY IF EXISTS "admins_read_all_messages" ON public.chat_messages;
+CREATE POLICY "admins_read_all_messages" ON public.chat_messages
+  FOR SELECT USING (public.is_admin());
+
+-- 9. get_all_sessions RPC ──────────────────────────────────────
+--    Returns all sessions across all users for the admin dashboard.
+--    SECURITY DEFINER ensures RLS is bypassed (runs as postgres).
+CREATE OR REPLACE FUNCTION public.get_all_sessions(row_limit INT DEFAULT 20)
+RETURNS TABLE (
+  id           UUID,
+  user_id      UUID,
+  title        TEXT,
+  created_at   TIMESTAMPTZ,
+  message_count BIGINT
+)
+LANGUAGE sql SECURITY DEFINER STABLE
+AS $$
+  SELECT
+    s.id,
+    s.user_id,
+    s.title,
+    s.created_at,
+    COUNT(m.id) AS message_count
+  FROM public.chat_sessions s
+  LEFT JOIN public.chat_messages m ON m.session_id = s.id
+  WHERE public.is_admin()
+  GROUP BY s.id, s.user_id, s.title, s.created_at
+  ORDER BY s.created_at DESC
+  LIMIT row_limit;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.get_all_sessions(INT) TO authenticated;

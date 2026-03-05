@@ -364,12 +364,18 @@ export default function AdminPage() {
                     <MessageSquare className="h-3.5 w-3.5 shrink-0 text-white/12" />
                     <div className="flex-1 min-w-0">
                       <p className="truncate text-xs text-white/55 font-medium">{s.title}</p>
-                      <p className="mt-0.5 text-[10px] text-white/20">
-                        {new Date(s.created_at).toLocaleString(undefined, {
-                          month: "short", day: "numeric",
-                          hour: "2-digit", minute: "2-digit",
-                        })}
-                      </p>
+                      <div className="mt-0.5 flex items-center gap-1.5">
+                        <span className="text-[10px] text-white/20">
+                          {new Date(s.created_at).toLocaleString(undefined, {
+                            month: "short", day: "numeric",
+                            hour: "2-digit", minute: "2-digit",
+                          })}
+                        </span>
+                        <span className="text-white/10">·</span>
+                        <span className="font-mono text-[9px] text-white/15 truncate max-w-20" title={s.user_id}>
+                          {s.user_id.slice(0, 8)}…
+                        </span>
+                      </div>
                     </div>
                     <span className="shrink-0 rounded-full border border-white/8 px-2 py-0.5 text-[10px] text-white/25 tabular-nums">
                       {s.message_count} msgs
