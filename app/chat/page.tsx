@@ -6,6 +6,7 @@ import {
   Send, LogOut, ChevronDown, ChevronUp, Bot, User,
   Upload, FileText, Trash2, Plus, CircleDot, Settings,
   Download, MessageSquare, History, FolderOpen, PenLine,
+  Mic, MicOff, Share2, Search, X, Check, Link,
 } from "lucide-react";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
@@ -13,7 +14,8 @@ import { resolveAvatar } from "@/lib/avatar";
 import {
   createSession, loadSessions, loadMessages, saveMessage,
   updateSessionTitle, deleteSession,
-  type ChatSession,
+  searchChatHistory, shareSession, unshareSession, isSessionShared,
+  type ChatSession, type SearchResult,
 } from "@/lib/chat-history";
 
 const RAG_API    = process.env.NEXT_PUBLIC_RAG_API_URL ?? "http://localhost:8000";
@@ -246,6 +248,19 @@ export default function ChatPage() {
   const [sessionId,   setSessionId]   = React.useState<string | null>(null);
   const [loadingHist, setLoadingHist] = React.useState(false);
 
+  // ── Search ────────────────────────────────────────────────
+  const [historySearch,  setHistorySearch]  = React.useState("");
+  const [searchResults,  setSearchResults]  = React.useState<SearchResult[]>([]);
+  const [isSearching,    setIsSearching]    = React.useState(false);
+
+  // ── Share ─────────────────────────────────────────────────
+  const [sharedSessions, setSharedSessions] = React.useState<Set<string>>(new Set());
+  const [shareCopied,    setShareCopied]    = React.useState<string | null>(null);
+
+  // ── Voice ─────────────────────────────────────────────────
+  const [listening, setListening] = React.useState(false);
+  const recognitionRef = React.useRef<any>(null);
+
   // ── Profile dropdown ─────────────────────────────────────
   const [profileOpen, setProfileOpen] = React.useState(false);
 
@@ -263,6 +278,19 @@ export default function ChatPage() {
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
+
+  // ── Search debounce ───────────────────────────────────────
+  React.useEffect(() => {
+    if (!historySearch.trim()) { setSearchResults([]); return; }
+    const t = setTimeout(async () => {
+      if (!user) return;
+      setIsSearching(true);
+      const results = await searchChatHistory(user.id, historySearch);
+      setSearchResults(results);
+      setIsSearching(false);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [historySearch, user]);
 
   // ── Auth guard + session init ─────────────────────────
   React.useEffect(() => {
@@ -334,6 +362,46 @@ export default function ChatPage() {
       const s = await loadSessions(user.id);
       setSessions(s);
     }
+  }
+
+  async function handleShare(e: React.MouseEvent, sid: string) {
+    e.stopPropagation();
+    const alreadyShared = sharedSessions.has(sid);
+    if (alreadyShared) {
+      await unshareSession(sid);
+      setSharedSessions((prev) => { const n = new Set(prev); n.delete(sid); return n; });
+    } else {
+      await shareSession(sid);
+      setSharedSessions((prev) => new Set([...prev, sid]));
+      const link = `${window.location.origin}/share/${sid}`;
+      await navigator.clipboard.writeText(link).catch(() => {});
+      setShareCopied(sid);
+      setTimeout(() => setShareCopied(null), 2500);
+    }
+  }
+
+  function toggleVoice() {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) { alert("Voice input is not supported in this browser. Try Chrome or Edge."); return; }
+    if (listening) {
+      recognitionRef.current?.stop();
+      setListening(false);
+      return;
+    }
+    const rec = new SR();
+    rec.continuous = false;
+    rec.interimResults = true;
+    rec.lang = "en-US";
+    rec.onstart  = () => setListening(true);
+    rec.onend    = () => { setListening(false); inputRef.current?.focus(); };
+    rec.onerror  = () => setListening(false);
+    rec.onresult = (e: any) => {
+      const transcript = Array.from(e.results as any[])
+        .map((r: any) => r[0].transcript).join("");
+      setInput(transcript);
+    };
+    recognitionRef.current = rec;
+    rec.start();
   }
 
   // ── Auth ────────────────────────────────────────────────
@@ -568,7 +636,7 @@ export default function ChatPage() {
         {/* ─── HISTORY ───────────────────────────────────── */}
         {sidebarTab === "history" && (
           <>
-            <div className="shrink-0 px-3 py-3 border-b border-white/8">
+            <div className="shrink-0 px-3 py-3 border-b border-white/8 space-y-2">
               <button
                 onClick={handleNewChat}
                 className="w-full flex items-center justify-center gap-2 rounded-lg border border-white/10 py-2 text-xs font-medium text-white/45 hover:text-white/75 hover:border-white/20 hover:bg-white/4 transition-colors"
@@ -576,40 +644,111 @@ export default function ChatPage() {
                 <PenLine className="h-3.5 w-3.5" />
                 New Chat
               </button>
+              {/* Search bar */}
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-white/25 pointer-events-none" />
+                <input
+                  type="text"
+                  value={historySearch}
+                  onChange={(e) => setHistorySearch(e.target.value)}
+                  placeholder="Search chats…"
+                  className="w-full rounded-lg bg-white/5 border border-white/10 pl-7 pr-7 py-1.5 text-xs text-white/70 placeholder:text-white/25 outline-none focus:border-white/20 transition-colors"
+                />
+                {historySearch && (
+                  <button
+                    onClick={() => { setHistorySearch(""); setSearchResults([]); }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-white/25 hover:text-white/60"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto p-2 space-y-0.5">
-              {sessions.length === 0 && (
-                <p className="text-center text-xs text-white/20 mt-10 px-4">
-                  No previous chats yet
-                </p>
-              )}
-              {sessions.map((s) => (
-                <div
-                  key={s.id}
-                  onClick={() => handleLoadSession(s.id)}
-                  className={cn(
-                    "group flex items-center gap-2 px-2.5 py-2 rounded-lg cursor-pointer transition-colors",
-                    sessionId === s.id
-                      ? "bg-white/8 text-white/70"
-                      : "hover:bg-white/5 text-white/40 hover:text-white/65",
-                  )}
-                >
-                  <MessageSquare className="h-3.5 w-3.5 shrink-0 text-white/20" />
-                  <div className="flex-1 min-w-0">
-                    <p className="truncate text-xs font-medium leading-tight">{s.title}</p>
-                    <p className="text-[10px] text-white/20 mt-0.5">
-                      {new Date(s.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-                    </p>
+              {/* Search results */}
+              {historySearch.trim() ? (
+                isSearching ? (
+                  <div className="flex justify-center mt-6">
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/15 border-t-white/50" />
                   </div>
-                  <button
-                    onClick={(e) => handleDeleteSession(e, s.id)}
-                    className="opacity-0 group-hover:opacity-100 flex h-5 w-5 items-center justify-center rounded hover:bg-red-500/15 text-white/15 hover:text-red-400 transition-all"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </button>
-                </div>
-              ))}
+                ) : searchResults.length === 0 ? (
+                  <p className="text-center text-xs text-white/20 mt-8 px-4">No results for &ldquo;{historySearch}&rdquo;</p>
+                ) : (
+                  <>
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-white/20 px-2 pt-1 pb-0.5">
+                      {searchResults.length} result{searchResults.length !== 1 ? "s" : ""}
+                    </p>
+                    {searchResults.map((r) => (
+                      <div
+                        key={r.message_id}
+                        onClick={() => { handleLoadSession(r.session_id); setHistorySearch(""); setSearchResults([]); }}
+                        className="px-2.5 py-2 rounded-lg cursor-pointer hover:bg-white/5 transition-colors group"
+                      >
+                        <p className="text-[10px] font-semibold text-white/35 truncate mb-0.5 uppercase tracking-wide">{r.session_title}</p>
+                        <p className="text-xs text-white/60 leading-relaxed line-clamp-2">
+                          {r.content.slice(0, 120)}{r.content.length > 120 ? "…" : ""}
+                        </p>
+                        <p className="text-[10px] text-white/20 mt-0.5">
+                          {new Date(r.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                          {" · "}{r.role === "user" ? "You" : "AI"}
+                        </p>
+                      </div>
+                    ))}
+                  </>
+                )
+              ) : (
+                /* Normal session list */
+                <>
+                  {sessions.length === 0 && (
+                    <p className="text-center text-xs text-white/20 mt-10 px-4">
+                      No previous chats yet
+                    </p>
+                  )}
+                  {sessions.map((s) => (
+                    <div
+                      key={s.id}
+                      onClick={() => handleLoadSession(s.id)}
+                      className={cn(
+                        "group flex items-center gap-2 px-2.5 py-2 rounded-lg cursor-pointer transition-colors",
+                        sessionId === s.id
+                          ? "bg-white/8 text-white/70"
+                          : "hover:bg-white/5 text-white/40 hover:text-white/65",
+                      )}
+                    >
+                      <MessageSquare className="h-3.5 w-3.5 shrink-0 text-white/20" />
+                      <div className="flex-1 min-w-0">
+                        <p className="truncate text-xs font-medium leading-tight">{s.title}</p>
+                        <p className="text-[10px] text-white/20 mt-0.5">
+                          {new Date(s.created_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+                        </p>
+                      </div>
+                      {/* Share button */}
+                      <button
+                        onClick={(e) => handleShare(e, s.id)}
+                        title={sharedSessions.has(s.id) ? "Shared — click to unshare" : "Share chat link"}
+                        className={cn(
+                          "opacity-0 group-hover:opacity-100 flex h-5 w-5 items-center justify-center rounded transition-all",
+                          shareCopied === s.id
+                            ? "opacity-100 text-emerald-400"
+                            : sharedSessions.has(s.id)
+                            ? "opacity-100 text-white/40 hover:text-amber-400"
+                            : "text-white/15 hover:text-white/50 hover:bg-white/8",
+                        )}
+                      >
+                        {shareCopied === s.id ? <Check className="h-3 w-3" /> : <Share2 className="h-3 w-3" />}
+                      </button>
+                      {/* Delete button */}
+                      <button
+                        onClick={(e) => handleDeleteSession(e, s.id)}
+                        className="opacity-0 group-hover:opacity-100 flex h-5 w-5 items-center justify-center rounded hover:bg-red-500/15 text-white/15 hover:text-red-400 transition-all"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </>
+              )}
             </div>
           </>
         )}
@@ -743,6 +882,19 @@ export default function ChatPage() {
                 className="flex-1 resize-none bg-transparent text-sm text-white placeholder:text-white/25 focus:outline-none max-h-40"
                 style={{ lineHeight: "1.5rem" }}
               />
+              {/* Voice input */}
+              <button
+                onClick={toggleVoice}
+                title={listening ? "Stop listening" : "Voice input"}
+                className={cn(
+                  "mb-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-all",
+                  listening
+                    ? "bg-red-500/20 text-red-400 animate-pulse"
+                    : "text-white/25 hover:text-white/60 hover:bg-white/8",
+                )}
+              >
+                {listening ? <MicOff className="h-3.5 w-3.5" /> : <Mic className="h-3.5 w-3.5" />}
+              </button>
               <button
                 onClick={sendMessage}
                 disabled={!input.trim() || sending}
@@ -757,7 +909,8 @@ export default function ChatPage() {
               </button>
             </div>
             <p className="mt-2 text-center text-[11px] text-white/20">
-              Multi-turn memory enabled · Answers grounded in your documents · Enter to send
+              Multi-turn memory · Grounded answers · Enter to send
+              {listening && <span className="ml-2 text-red-400 font-medium">● Listening…</span>}
             </p>
           </div>
         </div>
