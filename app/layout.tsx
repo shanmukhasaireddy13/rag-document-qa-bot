@@ -12,8 +12,8 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "top-devs",
-  description: "top-devs — Synthetix 4.0 hackathon team.",
+  title: "FlashFetch — AI Document Intelligence",
+  description: "Ask questions across your documents. Get cited answers instantly, powered by RAG.",
 };
 
 export default function RootLayout({
@@ -22,14 +22,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className="dark" suppressHydrationWarning>
       <body
         className={`${poppins.variable} antialiased`}
       >
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
-          enableSystem
+          defaultTheme="dark"
           disableTransitionOnChange
         >
           <Navbar />

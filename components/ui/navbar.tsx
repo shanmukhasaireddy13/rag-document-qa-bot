@@ -1,48 +1,22 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
-import { useTheme } from "next-themes";
-import { Sun, Moon, Menu, X, LogIn, MessageSquare } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { useRouter } from "next/navigation";
+import { Menu, X } from "lucide-react";
 import { AuthModal } from "@/components/ui/auth-modal";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
 const navLinks = [
-  { href: "/", label: "Home" },
+  { href: "#features", label: "Features" },
+  { href: "#how-it-works", label: "How It Works" },
   { href: "/team", label: "Team" },
 ];
-
-function ThemeToggle() {
-  const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = React.useState(false);
-
-  React.useEffect(() => setMounted(true), []);
-
-  if (!mounted) return <span className="h-9 w-9" />;
-
-  return (
-    <button
-      onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-      aria-label="Toggle theme"
-      className={cn(
-        "flex h-9 w-9 items-center justify-center rounded-md border border-border",
-        "text-foreground transition-colors hover:bg-accent hover:text-accent-foreground",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      )}
-    >
-      {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-    </button>
-  );
-}
 
 export function Navbar() {
   const [authOpen, setAuthOpen] = React.useState(false);
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const [user, setUser] = React.useState<any>(null);
-  const pathname = usePathname();
   const router = useRouter();
 
   React.useEffect(() => {
@@ -56,153 +30,108 @@ export function Navbar() {
     return () => listener.subscription.unsubscribe();
   }, []);
 
-  function handleChatClick() {
+  function handleCTAClick() {
     if (user) router.push("/chat");
     else setAuthOpen(true);
   }
 
-  const isActive = (href: string) =>
-    href === "/" ? pathname === "/" : pathname.startsWith(href);
-
   return (
     <>
-      <header className="sticky top-0 z-40 w-full border-b border-border bg-background/80 backdrop-blur-md">
-        <div className="container relative mx-auto flex h-20 items-center px-4">
-
-          {/* Left — logo */}
-          <div className="flex-1">
-            <Link href="/" className="flex items-center gap-2.5">
-              <Image
-                src="/favicon.ico"
-                alt="FlashFetch logo"
-                width={32}
-                height={32}
-                className="rounded-md"
-                priority
-              />
-              <span className="text-xl font-bold tracking-tight text-foreground">
-                FlashFetch
-              </span>
+      <header className="fixed top-0 w-full z-50 border-b border-white/8 bg-black/80 backdrop-blur-md">
+        <nav className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            {/* Logo */}
+            <Link href="/" className="flex items-center gap-2">
+              <div className="h-7 w-7 rounded-md bg-white flex items-center justify-center">
+                <span className="text-black text-xs font-black">FF</span>
+              </div>
+              <span className="text-base font-semibold text-white tracking-tight">FlashFetch</span>
             </Link>
-          </div>
 
-          {/* Center — desktop nav */}
-          <nav className="hidden items-center gap-1 md:flex">
-            {navLinks.map((link) => {
-              const active = isActive(link.href);
-              return (
+            {/* Center links */}
+            <div className="hidden md:flex items-center gap-8 absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+              {navLinks.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={cn(
-                    "relative px-4 py-2 text-base font-medium transition-colors",
-                    active
-                      ? "text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
+                  className="text-sm text-white/60 hover:text-white transition-colors"
                 >
                   {link.label}
-                  {active && (
-                    <span className="absolute inset-x-4 -bottom-px h-0.5 rounded-full bg-foreground" />
-                  )}
                 </Link>
-              );
-            })}
-          </nav>
+              ))}
+            </div>
 
-          {/* Right — theme toggle + chat + sign in */}
-          <div className="flex flex-1 items-center justify-end gap-2">
-            <ThemeToggle />
-
-            <button
-              onClick={handleChatClick}
-              className={cn(
-                "hidden items-center gap-2 rounded-md border border-border bg-background px-4 py-2.5 text-sm font-medium text-foreground",
-                "transition-colors hover:bg-accent hover:text-accent-foreground",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                "md:flex"
-              )}
-            >
-              <MessageSquare className="h-4 w-4" />
-              Chat
-            </button>
-
-            <button
-              onClick={() => setAuthOpen(true)}
-              className={cn(
-                "hidden items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-base font-medium text-primary-foreground",
-                "transition-colors hover:bg-primary/90",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                "md:flex"
-              )}
-            >
-              <LogIn className="h-4 w-4" />
-              Sign In
-            </button>
+            {/* Right actions */}
+            <div className="hidden md:flex items-center gap-3">
+              <button
+                onClick={() => setAuthOpen(true)}
+                className="text-sm text-white/60 hover:text-white transition-colors px-4 py-2"
+              >
+                Sign in
+              </button>
+              <button
+                onClick={handleCTAClick}
+                className="inline-flex items-center justify-center gap-2 rounded-md px-5 h-10 text-sm font-medium text-black transition-all hover:scale-105 active:scale-95"
+                style={{
+                  background: "linear-gradient(to bottom, #ffffff, rgba(255,255,255,0.88), rgba(255,255,255,0.7))",
+                }}
+              >
+                Get Started
+              </button>
+            </div>
 
             {/* Mobile hamburger */}
             <button
-              onClick={() => setMobileOpen((v) => !v)}
+              className="md:hidden text-white p-1"
+              onClick={() => setMobileOpen(!mobileOpen)}
               aria-label="Toggle menu"
-              className={cn(
-                "flex h-9 w-9 items-center justify-center rounded-md border border-border md:hidden",
-                "text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
-              )}
             >
-              {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+              {mobileOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
           </div>
-        </div>
+        </nav>
 
-        {/* Mobile dropdown */}
+        {/* Mobile menu */}
         {mobileOpen && (
-          <div className="border-t border-border bg-background px-4 py-4 md:hidden">
-            <nav className="flex flex-col gap-1">
-              {navLinks.map((link) => {
-                const active = isActive(link.href);
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    onClick={() => setMobileOpen(false)}
-                    className={cn(
-                      "rounded-md px-3 py-2 text-base font-medium transition-colors",
-                      active
-                        ? "bg-accent text-accent-foreground"
-                        : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-                    )}
-                  >
-                    {link.label}
-                  </Link>
-                );
-              })}
-              <button
-                onClick={() => { setMobileOpen(false); handleChatClick(); }}
-                className={cn(
-                  "mt-2 flex items-center gap-2 rounded-md border border-border bg-background px-3 py-2 text-base font-medium text-foreground",
-                  "transition-colors hover:bg-accent"
-                )}
-              >
-                <MessageSquare className="h-4 w-4" />
-                Chat
-              </button>
-              <button
-                onClick={() => { setMobileOpen(false); setAuthOpen(true); }}
-                className={cn(
-                  "mt-2 flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-base font-medium text-primary-foreground",
-                  "transition-colors hover:bg-primary/90"
-                )}
-              >
-                <LogIn className="h-4 w-4" />
-                Sign In / Login
-              </button>
-            </nav>
+          <div className="md:hidden bg-black/95 backdrop-blur-md border-t border-white/8">
+            <div className="px-6 py-4 flex flex-col gap-3">
+              {navLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="text-sm text-white/60 hover:text-white transition-colors py-1.5"
+                  onClick={() => setMobileOpen(false)}
+                >
+                  {link.label}
+                </Link>
+              ))}
+              <div className="flex flex-col gap-2 pt-3 border-t border-white/8">
+                <button
+                  onClick={() => { setAuthOpen(true); setMobileOpen(false); }}
+                  className="text-sm text-white/60 hover:text-white transition-colors py-2 text-left"
+                >
+                  Sign in
+                </button>
+                <button
+                  onClick={() => { handleCTAClick(); setMobileOpen(false); }}
+                  className="rounded-md px-4 py-2.5 text-sm font-medium text-black"
+                  style={{
+                    background: "linear-gradient(to bottom, #ffffff, rgba(255,255,255,0.7))",
+                  }}
+                >
+                  Get Started
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </header>
 
-      <AuthModal open={authOpen} onOpenChange={setAuthOpen} onSuccess={() => router.push("/chat")} />
+      <AuthModal
+        open={authOpen}
+        onOpenChange={setAuthOpen}
+        onSuccess={() => { setAuthOpen(false); router.push("/chat"); }}
+      />
     </>
   );
 }
-
