@@ -304,45 +304,41 @@ export default function Home() {
           </FadeIn>
 
           {/* BENTO GRID */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 auto-rows-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 auto-rows-auto">
 
             {/* ① VOICE INPUT — wide */}
             <FadeIn delay={0} direction="up" className="lg:col-span-2">
-              <div className="relative h-full rounded-2xl border border-violet-500/20 bg-[#0d0b14] overflow-hidden p-6 flex flex-col gap-5 group hover:border-violet-500/40 transition-all duration-300">
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-violet-500/50 to-transparent" />
-                <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-violet-600/10 blur-3xl pointer-events-none group-hover:bg-violet-600/20 transition-all duration-500" />
+              <div className="relative h-full rounded-2xl border border-white/8 bg-[#0a0a0a] overflow-hidden p-6 flex flex-col gap-5 group hover:border-white/16 hover:bg-white/[0.02] transition-all duration-300">
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/12 to-transparent" />
                 {/* mic demo */}
                 <div className="flex items-center gap-4">
                   <div className="relative flex-shrink-0">
-                    <div className="h-14 w-14 rounded-2xl bg-violet-500/15 border border-violet-500/30 flex items-center justify-center">
-                      <svg className="h-7 w-7 text-violet-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    <div className="h-14 w-14 rounded-2xl bg-white/6 border border-white/10 flex items-center justify-center">
+                      <svg className="h-7 w-7 text-white/70" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                         <rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0014 0M12 18v4M8 22h8"/>
                       </svg>
                     </div>
-                    <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-violet-400 border-2 border-[#0d0b14] animate-pulse" />
+                    <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-white/80 border-2 border-[#0a0a0a] animate-pulse" />
                   </div>
                   {/* waveform bars */}
                   <div className="flex items-center gap-1 h-10">
                     {[3,6,9,5,8,4,7,10,6,4,8,5,9,3,7].map((h, i) => (
-                      <div key={i} className="w-1 rounded-full bg-violet-400/60" style={{ height: `${h * 3}px`, animationDelay: `${i * 80}ms` }} />
+                      <div key={i} className="w-1 rounded-full bg-white/25" style={{ height: `${h * 3}px` }} />
                     ))}
                   </div>
-                  <div className="ml-auto rounded-xl border border-violet-500/20 bg-violet-500/8 px-3 py-1.5">
-                    <p className="text-[11px] text-violet-300 font-mono">Listening…</p>
+                  <div className="ml-auto rounded-xl border border-white/10 bg-white/5 px-3 py-1.5">
+                    <p className="text-[11px] text-white/50 font-mono">Listening…</p>
                   </div>
                 </div>
                 {/* pill input */}
                 <div className="rounded-xl border border-white/8 bg-white/4 px-4 py-2.5 flex items-center gap-2">
-                  <p className="text-sm text-white/50 flex-1 font-mono italic">&ldquo;Summarise the key findings from chapter 3&rdquo;</p>
-                  <div className="h-5 w-5 rounded-full bg-violet-500/20 border border-violet-500/30 flex items-center justify-center shrink-0">
-                    <svg className="h-2.5 w-2.5 text-violet-400" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 8h8M8 4l4 4-4 4"/></svg>
+                  <p className="text-sm text-white/45 flex-1 font-mono italic">&ldquo;Summarise the key findings from chapter 3&rdquo;</p>
+                  <div className="h-6 w-6 rounded-lg bg-white flex items-center justify-center shrink-0">
+                    <svg className="h-3 w-3 text-black" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 8h8M8 4l4 4-4 4"/></svg>
                   </div>
                 </div>
                 <div>
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-violet-400" />
-                    <h3 className="text-base font-semibold text-white">Voice Input</h3>
-                  </div>
+                  <h3 className="text-base font-semibold text-white mb-1.5">Voice Input</h3>
                   <p className="text-sm text-white/40 leading-relaxed">Click the mic, speak your question — it auto-fills the input. Powered by the browser&apos;s Web Speech API, zero backend needed.</p>
                 </div>
               </div>
@@ -350,61 +346,54 @@ export default function Home() {
 
             {/* ② MULTILINGUAL */}
             <FadeIn delay={70} direction="up">
-              <div className="relative h-full rounded-2xl border border-rose-500/20 bg-[#130b0b] overflow-hidden p-6 flex flex-col gap-5 group hover:border-rose-500/40 transition-all duration-300">
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-rose-500/50 to-transparent" />
-                <div className="absolute -left-8 -bottom-8 h-32 w-32 rounded-full bg-rose-600/10 blur-3xl pointer-events-none group-hover:bg-rose-600/20 transition-all duration-500" />
+              <div className="relative h-full rounded-2xl border border-white/8 bg-[#0a0a0a] overflow-hidden p-6 flex flex-col gap-5 group hover:border-white/16 hover:bg-white/[0.02] transition-all duration-300">
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/12 to-transparent" />
                 {/* language chips */}
                 <div className="flex flex-wrap gap-2">
                   {[
-                    { lang: "English",  flag: "🇺🇸", active: true  },
-                    { lang: "Tamil",    flag: "🇮🇳", active: false },
-                    { lang: "Hindi",    flag: "🇮🇳", active: false },
-                    { lang: "Telugu",   flag: "🇮🇳", active: false },
-                    { lang: "French",   flag: "🇫🇷", active: false },
-                    { lang: "Arabic",   flag: "🇸🇦", active: false },
+                    { lang: "English", flag: "🇺🇸", active: true  },
+                    { lang: "Tamil",   flag: "🇮🇳", active: false },
+                    { lang: "Hindi",   flag: "🇮🇳", active: false },
+                    { lang: "Telugu",  flag: "🇮🇳", active: false },
+                    { lang: "French",  flag: "🇫🇷", active: false },
+                    { lang: "Arabic",  flag: "🇸🇦", active: false },
                   ].map((l) => (
-                    <span key={l.lang} className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium ${l.active ? "border-rose-500/40 bg-rose-500/15 text-rose-300" : "border-white/8 bg-white/4 text-white/40"}`}>
+                    <span key={l.lang} className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors ${l.active ? "border-white/25 bg-white/10 text-white" : "border-white/8 bg-white/3 text-white/35"}`}>
                       {l.flag} {l.lang}
                     </span>
                   ))}
                 </div>
                 <div>
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-rose-400" />
-                    <h3 className="text-base font-semibold text-white">Multilingual</h3>
-                  </div>
+                  <h3 className="text-base font-semibold text-white mb-1.5">Multilingual</h3>
                   <p className="text-sm text-white/40 leading-relaxed">Ask in Tamil, Hindi, Telugu, French — FlashFetch auto-detects your language and replies in kind. No config, no flags.</p>
                 </div>
               </div>
             </FadeIn>
 
-            {/* ③ CONFIDENCE BADGES */}
+            {/* ③ CONFIDENCE SCORING */}
             <FadeIn delay={140} direction="up">
-              <div className="relative h-full rounded-2xl border border-emerald-500/20 bg-[#080f0a] overflow-hidden p-6 flex flex-col gap-5 group hover:border-emerald-500/40 transition-all duration-300">
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent" />
-                {/* badge demo */}
-                <div className="flex flex-col gap-2.5">
+              <div className="relative h-full rounded-2xl border border-white/8 bg-[#0a0a0a] overflow-hidden p-6 flex flex-col gap-5 group hover:border-white/16 hover:bg-white/[0.02] transition-all duration-300">
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/12 to-transparent" />
+                {/* progress bars */}
+                <div className="flex flex-col gap-3">
                   {[
-                    { label: "High confidence", pct: "97%", color: "emerald", w: "w-[97%]" },
-                    { label: "Medium confidence", pct: "68%", color: "amber",   w: "w-[68%]" },
-                    { label: "Low confidence",  pct: "31%", color: "red",     w: "w-[31%]" },
+                    { label: "High confidence",   pct: "97%", w: "w-[97%]", opacity: "bg-white/80" },
+                    { label: "Medium confidence", pct: "68%", w: "w-[68%]", opacity: "bg-white/45" },
+                    { label: "Low confidence",    pct: "31%", w: "w-[31%]", opacity: "bg-white/20" },
                   ].map((b) => (
-                    <div key={b.label} className="flex flex-col gap-1">
+                    <div key={b.label} className="flex flex-col gap-1.5">
                       <div className="flex justify-between items-center">
-                        <span className={`text-[11px] font-semibold text-${b.color}-400`}>{b.label}</span>
-                        <span className={`text-[11px] font-mono text-${b.color}-400`}>{b.pct}</span>
+                        <span className="text-[11px] font-medium text-white/55">{b.label}</span>
+                        <span className="text-[11px] font-mono text-white/40">{b.pct}</span>
                       </div>
                       <div className="h-1 w-full rounded-full bg-white/6">
-                        <div className={`h-1 rounded-full bg-${b.color}-400/60 ${b.w}`} />
+                        <div className={`h-1 rounded-full ${b.opacity} ${b.w}`} />
                       </div>
                     </div>
                   ))}
                 </div>
                 <div>
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                    <h3 className="text-base font-semibold text-white">Confidence Scoring</h3>
-                  </div>
+                  <h3 className="text-base font-semibold text-white mb-1.5">Confidence Scoring</h3>
                   <p className="text-sm text-white/40 leading-relaxed">Every answer carries a semantic similarity score. Know at a glance how certain the retrieval was — High, Medium, or Low.</p>
                 </div>
               </div>
@@ -412,24 +401,21 @@ export default function Home() {
 
             {/* ④ CITATIONS */}
             <FadeIn delay={210} direction="up">
-              <div className="relative h-full rounded-2xl border border-blue-500/20 bg-[#090c14] overflow-hidden p-6 flex flex-col gap-5 group hover:border-blue-500/40 transition-all duration-300">
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-500/50 to-transparent" />
-                {/* citation card demo */}
+              <div className="relative h-full rounded-2xl border border-white/8 bg-[#0a0a0a] overflow-hidden p-6 flex flex-col gap-5 group hover:border-white/16 hover:bg-white/[0.02] transition-all duration-300">
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/12 to-transparent" />
+                {/* citation card */}
                 <div className="rounded-xl border border-white/8 bg-white/3 p-3 flex flex-col gap-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-1.5">
-                      <svg className="h-3 w-3 text-blue-400" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 1h6l3 3v10H3V1z"/><path d="M10 1v3h3"/></svg>
-                      <span className="text-[11px] font-mono text-blue-300">refund_policy.pdf</span>
+                      <svg className="h-3 w-3 text-white/40" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 1h6l3 3v10H3V1z"/><path d="M10 1v3h3"/></svg>
+                      <span className="text-[11px] font-mono text-white/55">refund_policy.pdf</span>
                     </div>
-                    <span className="text-[9px] font-bold text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 rounded-full px-2 py-0.5">94%</span>
+                    <span className="text-[9px] font-bold text-white/80 bg-white/8 border border-white/12 rounded-full px-2 py-0.5">94%</span>
                   </div>
-                  <p className="text-[11px] text-white/35 font-mono italic leading-snug border-l-2 border-blue-500/30 pl-2">&ldquo;…eligible for a full refund within 7 business days of delivery…&rdquo;</p>
+                  <p className="text-[11px] text-white/30 font-mono italic leading-snug border-l-2 border-white/10 pl-2">&ldquo;…eligible for a full refund within 7 business days…&rdquo;</p>
                 </div>
                 <div>
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-blue-400" />
-                    <h3 className="text-base font-semibold text-white">Source Citations</h3>
-                  </div>
+                  <h3 className="text-base font-semibold text-white mb-1.5">Source Citations</h3>
                   <p className="text-sm text-white/40 leading-relaxed">Every answer shows which document it came from, the exact passage used, and a confidence score. Full transparency.</p>
                 </div>
               </div>
@@ -437,27 +423,24 @@ export default function Home() {
 
             {/* ⑤ HISTORY SEARCH */}
             <FadeIn delay={280} direction="up">
-              <div className="relative h-full rounded-2xl border border-cyan-500/20 bg-[#080d10] overflow-hidden p-6 flex flex-col gap-5 group hover:border-cyan-500/40 transition-all duration-300">
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent" />
+              <div className="relative h-full rounded-2xl border border-white/8 bg-[#0a0a0a] overflow-hidden p-6 flex flex-col gap-5 group hover:border-white/16 hover:bg-white/[0.02] transition-all duration-300">
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/12 to-transparent" />
                 {/* search demo */}
                 <div className="flex flex-col gap-2">
                   <div className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-2">
                     <svg className="h-3 w-3 text-white/30 shrink-0" viewBox="0 0 16 16" fill="none"><circle cx="6.5" cy="6.5" r="4.5" stroke="currentColor" strokeWidth="1.5"/><path d="M10 10l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                    <span className="text-[12px] text-cyan-300 font-mono">refund policy</span>
-                    <span className="ml-auto text-[9px] text-white/20 font-mono">3 hits</span>
+                    <span className="text-[12px] text-white/60 font-mono">refund policy</span>
+                    <span className="ml-auto text-[9px] text-white/25 font-mono">3 hits</span>
                   </div>
                   {["Session: March 5 · 3 results", "Session: March 3 · 1 result"].map((r, i) => (
                     <div key={i} className="flex items-center gap-2 rounded-md bg-white/3 border border-white/6 px-3 py-2">
-                      <svg className="h-2.5 w-2.5 text-cyan-400/60 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><circle cx="8" cy="8" r="6"/><path d="M8 5v3.5l2 2" strokeLinecap="round"/></svg>
+                      <svg className="h-2.5 w-2.5 text-white/25 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><circle cx="8" cy="8" r="6"/><path d="M8 5v3.5l2 2" strokeLinecap="round"/></svg>
                       <span className="text-[10px] text-white/40">{r}</span>
                     </div>
                   ))}
                 </div>
                 <div>
-                  <div className="flex items-center gap-2 mb-1.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-cyan-400" />
-                    <h3 className="text-base font-semibold text-white">Chat History Search</h3>
-                  </div>
+                  <h3 className="text-base font-semibold text-white mb-1.5">Chat History Search</h3>
                   <p className="text-sm text-white/40 leading-relaxed">Search across every question you&apos;ve ever asked. Jump straight to any past session match — no scrolling required.</p>
                 </div>
               </div>
@@ -465,23 +448,20 @@ export default function Home() {
 
             {/* ⑥ SHARED LINKS — full width */}
             <FadeIn delay={350} direction="up" className="sm:col-span-2 lg:col-span-3">
-              <div className="relative rounded-2xl border border-purple-500/20 bg-[#0d0a14] overflow-hidden p-6 group hover:border-purple-500/40 transition-all duration-300">
-                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-purple-500/50 to-transparent" />
-                <div className="absolute right-0 top-0 h-full w-64 bg-gradient-to-l from-purple-600/8 to-transparent pointer-events-none" />
+              <div className="relative rounded-2xl border border-white/8 bg-[#0a0a0a] overflow-hidden p-6 group hover:border-white/16 hover:bg-white/[0.02] transition-all duration-300">
+                <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/12 to-transparent" />
+                <div className="absolute right-0 top-0 h-full w-64 bg-gradient-to-l from-white/[0.02] to-transparent pointer-events-none" />
                 <div className="flex flex-col sm:flex-row sm:items-center gap-6">
-                  {/* left: text */}
+                  {/* left */}
                   <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="h-1.5 w-1.5 rounded-full bg-purple-400" />
-                      <h3 className="text-base font-semibold text-white">Shareable Chat Sessions</h3>
-                    </div>
+                    <h3 className="text-base font-semibold text-white mb-2">Shareable Chat Sessions</h3>
                     <p className="text-sm text-white/40 leading-relaxed max-w-lg">
                       Generate a public read-only link to any conversation. Share a live demo with teammates or your audience — no account needed to view. One click to share, one click to revoke.
                     </p>
                     <div className="mt-4 flex flex-wrap gap-2">
                       {["Public read-only", "One-click revoke", "No login to view", "Shareable instantly"].map((tag) => (
-                        <span key={tag} className="inline-flex items-center gap-1 rounded-full border border-purple-500/20 bg-purple-500/8 px-3 py-1 text-[11px] text-purple-300">
-                          <span className="h-1 w-1 rounded-full bg-purple-400" /> {tag}
+                        <span key={tag} className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-white/4 px-3 py-1 text-[11px] text-white/50">
+                          <span className="h-1 w-1 rounded-full bg-white/40" /> {tag}
                         </span>
                       ))}
                     </div>
@@ -489,15 +469,15 @@ export default function Home() {
                   {/* right: URL demo */}
                   <div className="flex flex-col gap-2 shrink-0 w-full sm:w-72">
                     <div className="rounded-xl border border-white/8 bg-white/4 px-4 py-3 flex items-center gap-2">
-                      <svg className="h-3.5 w-3.5 text-purple-400 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M6 9a3 3 0 005.12 2.12l2-2a3 3 0 00-4.24-4.24l-1.12 1.12"/><path d="M10 7a3 3 0 00-5.12-2.12l-2 2a3 3 0 004.24 4.24l1.12-1.12"/></svg>
-                      <span className="text-[11px] text-white/40 font-mono truncate">flashfetch.app/share/</span>
-                      <span className="text-[11px] text-purple-300 font-mono">a8f3k2</span>
+                      <svg className="h-3.5 w-3.5 text-white/35 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M6 9a3 3 0 005.12 2.12l2-2a3 3 0 00-4.24-4.24l-1.12 1.12"/><path d="M10 7a3 3 0 00-5.12-2.12l-2 2a3 3 0 004.24 4.24l1.12-1.12"/></svg>
+                      <span className="text-[11px] text-white/35 font-mono truncate">flashfetch.app/share/</span>
+                      <span className="text-[11px] text-white/70 font-mono font-semibold">a8f3k2</span>
                     </div>
                     <div className="rounded-xl border border-white/6 bg-white/2 p-3 flex flex-col gap-2">
                       <div className="flex items-center gap-2">
                         <div className="h-4 w-4 rounded bg-white flex items-center justify-center shrink-0"><span className="text-black text-[6px] font-black">FF</span></div>
                         <span className="text-[10px] text-white/40">FlashFetch · Shared Session</span>
-                        <span className="ml-auto text-[9px] text-purple-400 bg-purple-400/10 border border-purple-400/20 rounded-full px-2 py-0.5">Public</span>
+                        <span className="ml-auto text-[9px] text-white/60 bg-white/8 border border-white/10 rounded-full px-2 py-0.5">Public</span>
                       </div>
                       <p className="text-[11px] text-white/25 italic pl-6">Read-only · No login required</p>
                     </div>
