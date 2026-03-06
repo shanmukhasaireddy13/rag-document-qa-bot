@@ -178,7 +178,10 @@ export function AuthModal({ open, onOpenChange, onSuccess }: AuthModalProps) {
     const { error } = await supabase.auth.signUp({
       email: signupEmail,
       password: signupPassword,
-      options: { data: { full_name: signupName } },
+      options: {
+        data: { full_name: signupName },
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=/chat`,
+      },
     });
     setFormLoading(false);
     if (error) { setError(error.message); return; }
@@ -248,7 +251,7 @@ export function AuthModal({ open, onOpenChange, onSuccess }: AuthModalProps) {
             </Dialog.Description>
           </div>
 
-          {/* Tab switcher â€” login / signup */}
+          {/* Tab switcher — login / signup */}
           {view !== "forgot" && (
             <div className="mb-6 flex rounded-lg border border-white/10 bg-white/3 p-1">
               {(["login", "signup"] as const).map((v) => (
@@ -280,7 +283,7 @@ export function AuthModal({ open, onOpenChange, onSuccess }: AuthModalProps) {
             </p>
           )}
 
-          {/* â”€â”€ LOGIN â”€â”€ */}
+          {/* ── LOGIN ── */}
           {view === "login" && (
             <form onSubmit={handleLogin} className="flex flex-col gap-4">
               <InputField label="Email" id="login-email" type="email" placeholder="you@example.com" value={loginEmail} onChange={setLoginEmail} required />
@@ -310,7 +313,7 @@ export function AuthModal({ open, onOpenChange, onSuccess }: AuthModalProps) {
             </form>
           )}
 
-          {/* â”€â”€ SIGN UP â”€â”€ */}
+          {/* ── SIGN UP ── */}
           {view === "signup" && (
             <form onSubmit={handleSignup} className="flex flex-col gap-4">
               <InputField label="Full name" id="signup-name" placeholder="Jane Doe" value={signupName} onChange={setSignupName} required />
@@ -335,12 +338,12 @@ export function AuthModal({ open, onOpenChange, onSuccess }: AuthModalProps) {
             </form>
           )}
 
-          {/* â”€â”€ FORGOT PASSWORD â”€â”€ */}
+          {/* ── FORGOT PASSWORD ── */}
           {view === "forgot" && (
             <form onSubmit={handleForgot} className="flex flex-col gap-4">
               {forgotSent ? (
                 <p className="rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-3 text-sm text-green-600 dark:text-green-400">
-                  âœ“ Reset link sent â€” check your inbox.
+                  ✓ Reset link sent — check your inbox.
                 </p>
               ) : (
                 <>
