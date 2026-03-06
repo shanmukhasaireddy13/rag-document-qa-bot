@@ -55,8 +55,14 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-10 pt-6 border-t border-white/8">
-          <p className="text-xs text-white/25 text-center">© 2026 FlashFetch. Built for Synthetix 4.0.</p>
+        <div className="mt-10 pt-6 border-t border-white/8 flex flex-col items-center gap-2 sm:flex-row sm:justify-between">
+          <p className="text-xs text-white/25">© 2026 FlashFetch. Built for Synthetix 4.0.</p>
+          <Link
+            href="/admin"
+            className="text-xs text-white/15 hover:text-white/40 transition-colors"
+          >
+            Admin Portal
+          </Link>
         </div>
       </div>
     </footer>
