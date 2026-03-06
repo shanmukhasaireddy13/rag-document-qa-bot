@@ -104,7 +104,10 @@ def generate(query: str, retrieved: list[dict], history: list[dict] | None = Non
         "3. You may use the previous conversation for context, but base answers on the documents.\n"
         "4. If the exact answer is not in the context, respond EXACTLY with: "
         f'"{NO_ANSWER}"\n'
-        "5. Never guess, infer beyond what is written, or fabricate details."
+        "5. Never guess, infer beyond what is written, or fabricate details.\n"
+        "6. IMPORTANT: Detect the language of the user's question and respond in that SAME language. "
+        "If the question is in Tamil, answer in Tamil. Hindi → Hindi. Telugu → Telugu. "
+        "English → English. Match the user's language exactly."
     )
 
     user_prompt = (
@@ -188,7 +191,10 @@ def generate_with_context(
         "3. You may use the previous conversation for context, but base answers on the document.\n"
         "4. If the exact answer is not in the context, respond EXACTLY with: "
         f'"{NO_ANSWER}"\n'
-        "5. Never guess, infer beyond what is written, or fabricate details."
+        "5. Never guess, infer beyond what is written, or fabricate details.\n"
+        "6. IMPORTANT: Detect the language of the user's question and respond in that SAME language. "
+        "If the question is in Tamil, answer in Tamil. Hindi → Hindi. Telugu → Telugu. "
+        "English → English. Match the user's language exactly."
     )
 
     user_prompt = (
