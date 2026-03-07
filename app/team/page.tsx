@@ -20,7 +20,7 @@ const team = [
     icon: Search,
     description:
       "Breaks down complex challenges into solvable pieces. Deep-dives into research to lock in the best approach before a single line of code is written. The team's edge against ambiguity.",
-    avatar: "https://i.pravatar.cc/400?img=53",
+    avatar: "/contributors/charan.png",
     instagram: "https://www.instagram.com/sharansundarp/",
     github: "https://github.com/AshishReddy-CH",
     flip: true,
@@ -31,7 +31,7 @@ const team = [
     icon: Lightbulb,
     description:
       "Leads the team's research strategy and validates ideas against real-world constraints. Makes sure what we build is grounded, feasible, and does not fall apart under scrutiny.",
-    avatar: "https://i.pravatar.cc/400?img=68",
+    avatar: "/contributors/ashish.png",
     instagram: "https://www.instagram.com/1xcidd/",
     flip: false,
   },
