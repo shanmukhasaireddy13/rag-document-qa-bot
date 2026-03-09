@@ -199,7 +199,7 @@ saveTokenBtn.addEventListener("click", () => {
 });
 
 logoutBtn.addEventListener("click", () => {
-  chrome.storage.local.remove(["ff_api_url"], () => {
+  chrome.storage.local.remove(["ff_api_url", "ff_api_key"], () => {
     conversationHistory = [];
     activeFileContext = null;
     setStatus("Reset done", "success");

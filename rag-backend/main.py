@@ -39,7 +39,16 @@ app = FastAPI(
     version="1.0.0",
 )
 
+# Allowed redirect hosts (we only follow redirects from these domains)
+_REDIRECT_ALLOW = {"drive.google.com", "docs.google.com", "googleusercontent.com"}
+
 def is_safe_url(url: str) -> bool:
+    """Validate that *url* resolves exclusively to global (public) IPs.
+
+    Uses getaddrinfo to check **all** A/AAAA records (not just the first),
+    and enforces ip_address.is_global so link-local, loopback, private and
+    reserved ranges are all rejected.
+    """
     try:
         parsed = urllib.parse.urlparse(url)
         if parsed.scheme not in ("http", "https"):
@@ -47,10 +56,14 @@ def is_safe_url(url: str) -> bool:
         hostname = parsed.hostname
         if not hostname:
             return False
-        ip = socket.gethostbyname(hostname)
-        ip_obj = ipaddress.ip_address(ip)
-        if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local:
+        # Resolve every A and AAAA record for the hostname
+        addrs = socket.getaddrinfo(hostname, None, proto=socket.IPPROTO_TCP)
+        if not addrs:
             return False
+        for family, _type, _proto, _canonname, sockaddr in addrs:
+            ip_obj = ipaddress.ip_address(sockaddr[0])
+            if not ip_obj.is_global:
+                return False
         return True
     except Exception:
         return False
@@ -66,21 +79,25 @@ API_KEY_NAME = "Authorization"
 api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
 
 def get_api_key(api_key: str = Security(api_key_header)) -> str:
-    # Look for RAG_API_KEY, fallback to None to force config errors when missing rather than failing open
+    """Validate the Authorization header against RAG_API_KEY.
+
+    Fail-closed: if the env var is unset the server returns 500 instead of
+    silently allowing unauthenticated access.
+    """
     expected_key = os.getenv("RAG_API_KEY")
-    
+
     if not expected_key:
-        print("WARNING: RAG_API_KEY is not set in the environment. API is insecure.")
-        return "" # If no key configured, we let it pass for dev. But ideally we should block.
-        # To strictly enforce, uncomment the below lines:
-        # raise HTTPException(status_code=500, detail="Server misconfiguration: RAG_API_KEY not set.")
+        raise HTTPException(
+            status_code=500,
+            detail="Server misconfiguration: RAG_API_KEY is not set.",
+        )
 
     if not api_key:
         raise HTTPException(status_code=401, detail="Missing Authorization header")
-        
-    # strip "Bearer " if provided
+
+    # strip "Bearer " prefix if provided
     token = api_key.replace("Bearer ", "").strip()
-    
+
     if token != expected_key:
         raise HTTPException(status_code=401, detail="Invalid API Key")
     return token

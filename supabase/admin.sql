@@ -11,7 +11,7 @@
     granted_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   );
 
-  -- 2. RLS: Only the row's own user OR existing admins can read
+  -- 2. RLS: Only the row's own user can read their admin_users entry
   ALTER TABLE public.admin_users ENABLE ROW LEVEL SECURITY;
 
   DROP POLICY IF EXISTS "admins_read_own" ON public.admin_users;
@@ -76,15 +76,11 @@
     );
   $$;
 
-  -- Revoke direct view access from anonymous and public
-  REVOKE ALL ON public.admin_analytics     FROM anon, public;
-  REVOKE ALL ON public.admin_top_documents FROM anon, public;
-  REVOKE ALL ON public.admin_daily_queries FROM anon, public;
-
-  -- Allow authenticated role to read (app enforces admin check via is_admin())
-  GRANT SELECT ON public.admin_analytics     TO authenticated;
-  GRANT SELECT ON public.admin_top_documents TO authenticated;
-  GRANT SELECT ON public.admin_daily_queries TO authenticated;
+  -- Revoke direct view access from all roles.
+  -- Access is only permitted through the admin-only SECURITY DEFINER RPCs below.
+  REVOKE ALL ON public.admin_analytics     FROM anon, public, authenticated;
+  REVOKE ALL ON public.admin_top_documents FROM anon, public, authenticated;
+  REVOKE ALL ON public.admin_daily_queries FROM anon, public, authenticated;
 
   -- 7. Secure wrapper functions (SECURITY DEFINER = run as owner) ──
   --    These enforce the admin check at the database level.

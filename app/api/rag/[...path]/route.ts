@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { CookieOptions, createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
-const RAG_API_URL = process.env.NEXT_PUBLIC_RAG_API_URL || "http://127.0.0.1:8000";
+// Use a server-only env var (not NEXT_PUBLIC_*) to avoid leaking the internal
+// backend URL into the client bundle.
+const RAG_API_URL = process.env.RAG_API_URL || process.env.NEXT_PUBLIC_RAG_API_URL || "http://127.0.0.1:8000";
 const RAG_API_KEY = process.env.RAG_API_KEY || "";
 
 export async function GET(request: NextRequest) {
@@ -18,6 +20,15 @@ export async function DELETE(request: NextRequest) {
 }
 
 async function proxyRequest(request: NextRequest) {
+    // 0. Fail fast if RAG_API_KEY is not configured
+    if (!RAG_API_KEY) {
+        console.error("[Proxy Error]: RAG_API_KEY environment variable is not set.");
+        return NextResponse.json(
+            { detail: "Server misconfiguration: backend API key not set." },
+            { status: 500 }
+        );
+    }
+
     // 1. Verify Authentication
     const cookieStore = await cookies();
     const supabase = createServerClient(
@@ -69,15 +80,18 @@ async function proxyRequest(request: NextRequest) {
         headers.set("Content-Type", contentType);
     }
 
-    // 4. Forward the request
+    // 4. Forward the request — stream the body instead of buffering
     try {
         const fetchOptions: RequestInit = {
             method: request.method,
             headers: headers,
-            // For GET/HEAD requests, body cannot be included
-            body: ["GET", "HEAD"].includes(request.method) ? undefined : await request.blob(),
+            // Stream the body directly instead of buffering via .blob()
+            // For GET/HEAD requests, body must be omitted.
+            body: ["GET", "HEAD"].includes(request.method) ? undefined : request.body,
             // Disable caching for proxy requests
             cache: "no-store",
+            // @ts-expect-error -- Next.js extended fetch supports duplex for streaming
+            duplex: "half",
         };
 
         const response = await fetch(backendUrl, fetchOptions);
@@ -93,7 +107,7 @@ async function proxyRequest(request: NextRequest) {
             statusText: response.statusText,
             headers: responseHeaders,
         });
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("[Proxy Error]:", error);
         return NextResponse.json(
             { detail: "Backend connection failed" },
