@@ -17,8 +17,12 @@ import io
 import re
 import httpx
 import fitz  # PyMuPDF
+import ipaddress
+import urllib.parse
+import socket
 
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, Depends, Security
+from fastapi.security import APIKeyHeader
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -35,10 +39,60 @@ app = FastAPI(
     version="1.0.0",
 )
 
+def is_safe_url(url: str) -> bool:
+    try:
+        parsed = urllib.parse.urlparse(url)
+        if parsed.scheme not in ("http", "https"):
+            return False
+        hostname = parsed.hostname
+        if not hostname:
+            return False
+        ip = socket.gethostbyname(hostname)
+        ip_obj = ipaddress.ip_address(ip)
+        if ip_obj.is_private or ip_obj.is_loopback or ip_obj.is_link_local:
+            return False
+        return True
+    except Exception:
+        return False
+
+def sanitize_filename(filename: str) -> str:
+    basename = os.path.basename(filename)
+    if not basename or basename in {".", ".."}:
+        raise ValueError("Invalid filename")
+    return basename
+
+# ── Auth setup ───────────────────────────────────────────
+API_KEY_NAME = "Authorization"
+api_key_header = APIKeyHeader(name=API_KEY_NAME, auto_error=False)
+
+def get_api_key(api_key: str = Security(api_key_header)) -> str:
+    # Look for RAG_API_KEY, fallback to None to force config errors when missing rather than failing open
+    expected_key = os.getenv("RAG_API_KEY")
+    
+    if not expected_key:
+        print("WARNING: RAG_API_KEY is not set in the environment. API is insecure.")
+        return "" # If no key configured, we let it pass for dev. But ideally we should block.
+        # To strictly enforce, uncomment the below lines:
+        # raise HTTPException(status_code=500, detail="Server misconfiguration: RAG_API_KEY not set.")
+
+    if not api_key:
+        raise HTTPException(status_code=401, detail="Missing Authorization header")
+        
+    # strip "Bearer " if provided
+    token = api_key.replace("Bearer ", "").strip()
+    
+    if token != expected_key:
+        raise HTTPException(status_code=401, detail="Invalid API Key")
+    return token
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=[
+        "http://localhost:3000",
+        "https://flashfetch.vercel.app",
+        "*"  # Wildcard for the Chrome Extension
+    ],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -101,7 +155,7 @@ async def auto_ingest_on_startup():
 
 # ── Routes ────────────────────────────────────────────────
 @app.post("/ask", response_model=AnswerResponse)
-def ask(query: Query):
+def ask(query: Query, api_key: str = Depends(get_api_key)):
     """
     Accepts a question, retrieves relevant document chunks,
     and returns a grounded answer from the Groq LLM.
@@ -118,7 +172,7 @@ def ask(query: Query):
 
 
 @app.post("/ask-with-context", response_model=AnswerResponse)
-def ask_with_context(query: InlineQuery):
+def ask_with_context(query: InlineQuery, api_key: str = Depends(get_api_key)):
     """
     Answer a question using raw text passed inline (no document upload needed).
     The Chrome extension uses this when a file is open in the browser.
@@ -137,13 +191,15 @@ def ask_with_context(query: InlineQuery):
 
 
 @app.post("/extract-url")
-def extract_url(req: UrlExtractRequest):
+def extract_url(req: UrlExtractRequest, api_key: str = Depends(get_api_key)):
     """
     Download any URL and extract its text content.
     Supports Google Drive share links, direct PDF URLs, plain text URLs.
     Returns { filename, text, char_count } for use with /ask-with-context.
     """
     url = req.url.strip()
+    if not is_safe_url(url):
+        raise HTTPException(status_code=400, detail="Invalid or unsafe URL provided.")
 
     # ── Convert Google Drive share/view/preview URL → direct download ─────
     # Patterns:
@@ -244,15 +300,19 @@ def _list_docs() -> list[dict]:
 
 
 @app.get("/documents")
-def list_documents():
+def list_documents(api_key: str = Depends(get_api_key)):
     """Return all documents currently in the docs/ folder."""
     return {"documents": _list_docs()}
 
 
 @app.post("/upload")
-async def upload_document(file: UploadFile = File(...)):
+async def upload_document(file: UploadFile = File(...), api_key: str = Depends(get_api_key)):
     """Upload a .txt / .md / .pdf file, re-index everything, return updated doc list."""
-    fname = file.filename or ""
+    try:
+        fname = sanitize_filename(file.filename or "")
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid filename.")
+        
     if not fname.lower().endswith(SUPPORTED):
         raise HTTPException(
             status_code=400,
@@ -276,9 +336,14 @@ async def upload_document(file: UploadFile = File(...)):
 
 
 @app.delete("/documents/{filename}")
-def delete_document(filename: str):
+def delete_document(filename: str, api_key: str = Depends(get_api_key)):
     """Remove a document and re-index."""
-    path = os.path.join(DOCS_DIR, filename)
+    try:
+        safe_name = sanitize_filename(filename)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Invalid filename.")
+        
+    path = os.path.join(DOCS_DIR, safe_name)
     if not os.path.exists(path):
         raise HTTPException(status_code=404, detail="File not found.")
     os.remove(path)

@@ -28,8 +28,8 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   }
 
   if (info.menuItemId === "flashfetch-save-page") {
-    chrome.storage.local.get(["ff_token", "ff_api_url"], async (data) => {
-      const apiUrl = data.ff_api_url || "https://rag-document-qa-bot-production.up.railway.app";
+    chrome.storage.local.get(["ff_api_key", "ff_api_url"], async (data) => {
+      const apiUrl = data.ff_api_url || "http://localhost:8000";
 
       // Inject content script to grab page text
       chrome.scripting.executeScript(
@@ -49,7 +49,7 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 
           try {
             const headers = {};
-            if (data.ff_token) headers["Authorization"] = `Bearer ${data.ff_token}`;
+            if (data.ff_api_key) headers["Authorization"] = `Bearer ${data.ff_api_key}`;
 
             const res = await fetch(`${apiUrl}/upload`, {
               method: "POST",
@@ -77,6 +77,6 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 // Injected into the active tab to extract readable text
 function extractPageText() {
   const title = document.title;
-  const body  = document.body ? document.body.innerText : "";
+  const body = document.body ? document.body.innerText : "";
   return { title, text: body.slice(0, 50000) }; // cap at 50 KB
 }

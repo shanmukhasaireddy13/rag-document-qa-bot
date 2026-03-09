@@ -1,25 +1,26 @@
 ﻿// Constants
 // In production: update this to your Render backend URL
 // e.g. "https://flashfetch-backend.onrender.com"
-const DEFAULT_API  = "http://localhost:8000";
-const OLD_RAILWAY  = "https://rag-document-qa-bot-production.up.railway.app";
+const DEFAULT_API = "http://localhost:8000";
+const OLD_RAILWAY = "https://rag-document-qa-bot-production.up.railway.app";
 
 // State
 let conversationHistory = [];
-let activeFileContext   = null;
+let activeFileContext = null;
 
 // DOM
-const authScreen     = document.getElementById("auth-screen");
-const chatScreen     = document.getElementById("chat-screen");
-const apiUrlInput    = document.getElementById("api-url-input");
-const saveTokenBtn   = document.getElementById("save-token-btn");
-const messagesEl     = document.getElementById("messages");
-const questionInput  = document.getElementById("question-input");
-const sendBtn        = document.getElementById("send-btn");
-const savePageBtn    = document.getElementById("save-page-btn");
-const logoutBtn      = document.getElementById("logout-btn");
-const statusBar      = document.getElementById("status-bar");
-const fileBanner     = document.getElementById("file-banner");
+const authScreen = document.getElementById("auth-screen");
+const chatScreen = document.getElementById("chat-screen");
+const apiUrlInput = document.getElementById("api-url-input");
+const apiKeyInput = document.getElementById("api-key-input");
+const saveTokenBtn = document.getElementById("save-token-btn");
+const messagesEl = document.getElementById("messages");
+const questionInput = document.getElementById("question-input");
+const sendBtn = document.getElementById("send-btn");
+const savePageBtn = document.getElementById("save-page-btn");
+const logoutBtn = document.getElementById("logout-btn");
+const statusBar = document.getElementById("status-bar");
+const fileBanner = document.getElementById("file-banner");
 const fileBannerName = document.getElementById("file-banner-name");
 const fileBannerClear = document.getElementById("file-banner-clear");
 
@@ -45,12 +46,12 @@ function detectOpenFile() {
     const tab = tabs[0];
     if (!tab || !tab.url) return;
 
-    const url      = tab.url;
-    const isFile   = url.startsWith("file://");
-    const rawName  = url.split("/").pop().split("?")[0] || "document";
+    const url = tab.url;
+    const isFile = url.startsWith("file://");
+    const rawName = url.split("/").pop().split("?")[0] || "document";
     const fileName = decodeURIComponent(rawName);
 
-    const isDrive  = url.includes("drive.google.com") || url.includes("docs.google.com");
+    const isDrive = url.includes("drive.google.com") || url.includes("docs.google.com");
     const isPDFUrl = !isFile && url.toLowerCase().endsWith(".pdf");
 
     if (isDrive || isPDFUrl) {
@@ -85,16 +86,20 @@ function detectOpenFile() {
 
 // Load any URL via backend /extract-url
 function loadFromUrl(url, label) {
-  chrome.storage.local.get(["ff_api_url"], async (data) => {
+  chrome.storage.local.get(["ff_api_url", "ff_api_key"], async (data) => {
     const apiUrl = data.ff_api_url || DEFAULT_API;
+    const apiKey = data.ff_api_key || "";
     clearEmptyState();
     showLoadingBanner(label);
     setStatus("Reading " + label + "...");
 
     try {
+      const headers = { "Content-Type": "application/json" };
+      if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
+
       const res = await fetch(apiUrl + "/extract-url", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({ url }),
       });
 
@@ -106,8 +111,8 @@ function loadFromUrl(url, label) {
       const json = await res.json();
       hideStatus();
       setFileContext({
-        title:    json.filename,
-        text:     json.text,
+        title: json.filename,
+        text: json.text,
         fileType: json.filename.toLowerCase().endsWith(".pdf") ? "pdf" : "txt",
       });
 
@@ -136,9 +141,9 @@ function setFileContext(res) {
 }
 
 function appendPDFHelp(fileName, errorMsg) {
-  const div    = document.createElement("div");
+  const div = document.createElement("div");
   div.className = "msg assistant";
-  const bubble  = document.createElement("div");
+  const bubble = document.createElement("div");
   bubble.className = "bubble";
 
   if (errorMsg && errorMsg.includes("Anyone with the link")) {
@@ -186,8 +191,9 @@ function showChat() {
 
 saveTokenBtn.addEventListener("click", () => {
   const apiUrl = apiUrlInput.value.trim() || DEFAULT_API;
-  chrome.storage.local.set({ ff_api_url: apiUrl }, () => {
-    setStatus("API URL saved: " + apiUrl, "success");
+  const apiKey = apiKeyInput.value.trim();
+  chrome.storage.local.set({ ff_api_url: apiUrl, ff_api_key: apiKey }, () => {
+    setStatus("Settings saved!", "success");
     setTimeout(() => hideStatus(), 2000);
   });
 });
@@ -195,7 +201,7 @@ saveTokenBtn.addEventListener("click", () => {
 logoutBtn.addEventListener("click", () => {
   chrome.storage.local.remove(["ff_api_url"], () => {
     conversationHistory = [];
-    activeFileContext   = null;
+    activeFileContext = null;
     setStatus("Reset done", "success");
     setTimeout(() => hideStatus(), 1500);
   });
@@ -218,8 +224,9 @@ async function sendQuestion() {
   const question = questionInput.value.trim();
   if (!question) return;
 
-  chrome.storage.local.get(["ff_api_url"], async (data) => {
+  chrome.storage.local.get(["ff_api_url", "ff_api_key"], async (data) => {
     const apiUrl = data.ff_api_url || DEFAULT_API;
+    const apiKey = data.ff_api_key || "";
 
     clearEmptyState();
     appendMessage("user", question);
@@ -232,6 +239,7 @@ async function sendQuestion() {
 
     try {
       const headers = { "Content-Type": "application/json" };
+      if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
 
       let endpoint, body;
 
@@ -240,8 +248,8 @@ async function sendQuestion() {
         body = JSON.stringify({
           question,
           context_text: activeFileContext.text,
-          filename:     activeFileContext.filename,
-          history:      historyToSend.slice(0, -1),
+          filename: activeFileContext.filename,
+          history: historyToSend.slice(0, -1),
         });
       } else {
         endpoint = apiUrl + "/ask";
@@ -256,10 +264,10 @@ async function sendQuestion() {
 
       if (!res.ok) throw new Error("API error " + res.status);
 
-      const json       = await res.json();
-      const answer     = json.answer     || "No answer returned.";
+      const json = await res.json();
+      const answer = json.answer || "No answer returned.";
       const confidence = json.confidence || "low";
-      const sources    = json.sources    || [];
+      const sources = json.sources || [];
 
       appendMessage("assistant", answer, confidence, sources);
       conversationHistory.push({ role: "assistant", content: answer });
@@ -276,30 +284,34 @@ async function sendQuestion() {
 
 // Save current page / upload
 savePageBtn.addEventListener("click", async () => {
-  chrome.storage.local.get(["ff_api_url"], async (data) => {
+  chrome.storage.local.get(["ff_api_url", "ff_api_key"], async (data) => {
     const apiUrl = data.ff_api_url || DEFAULT_API;
+    const apiKey = data.ff_api_key || "";
 
     chrome.tabs.query({ active: true, currentWindow: true }, async (tabs) => {
       const tab = tabs[0];
       if (!tab || !tab.url) { setStatus("Cannot read this tab", "error"); return; }
 
-      const url      = tab.url;
-      const isPDF    = url.toLowerCase().endsWith(".pdf");
-      const isFile   = url.startsWith("file://");
-      const rawName  = url.split("/").pop().split("?")[0] || "document";
+      const url = tab.url;
+      const isPDF = url.toLowerCase().endsWith(".pdf");
+      const isFile = url.startsWith("file://");
+      const rawName = url.split("/").pop().split("?")[0] || "document";
       const fileName = decodeURIComponent(rawName);
 
       if (isFile) {
         setStatus("Reading " + fileName + "...");
         try {
-          const fileRes  = await fetch(url);
-          const blob     = await fileRes.blob();
+          const fileRes = await fetch(url);
+          const blob = await fileRes.blob();
           const mimeType = isPDF ? "application/pdf" : "text/plain";
-          const upload   = new Blob([blob], { type: mimeType });
+          const upload = new Blob([blob], { type: mimeType });
           const formData = new FormData();
           formData.append("file", upload, fileName);
           setStatus("Uploading to FlashFetch...");
-          const res = await fetch(apiUrl + "/upload", { method: "POST", body: formData });
+          const headers = {};
+          if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
+
+          const res = await fetch(apiUrl + "/upload", { method: "POST", headers, body: formData });
           if (!res.ok) throw new Error("Upload failed " + res.status);
           setStatus("Uploaded: " + fileName, "success");
           clearEmptyState();
@@ -317,13 +329,16 @@ savePageBtn.addEventListener("click", async () => {
           setStatus("Cannot read this page", "error"); return;
         }
         const { title, text } = response;
-        const blob     = new Blob([text], { type: "text/plain" });
-        const fname    = (title || "webpage").replace(/[^a-z0-9]/gi, "_").slice(0, 40) + ".txt";
+        const blob = new Blob([text], { type: "text/plain" });
+        const fname = (title || "webpage").replace(/[^a-z0-9]/gi, "_").slice(0, 40) + ".txt";
         const formData = new FormData();
         formData.append("file", blob, fname);
         setStatus("Uploading...");
         try {
-          const res = await fetch(apiUrl + "/upload", { method: "POST", body: formData });
+          const headers = {};
+          if (apiKey) headers["Authorization"] = `Bearer ${apiKey}`;
+
+          const res = await fetch(apiUrl + "/upload", { method: "POST", headers, body: formData });
           if (!res.ok) throw new Error("Upload failed " + res.status);
           setStatus("Saved: " + fname, "success");
           setTimeout(() => hideStatus(), 3000);
@@ -342,9 +357,9 @@ function clearEmptyState() {
 }
 
 function appendMessage(role, text, confidence, sources) {
-  const div    = document.createElement("div");
+  const div = document.createElement("div");
   div.className = "msg " + role;
-  const bubble  = document.createElement("div");
+  const bubble = document.createElement("div");
   bubble.className = "bubble";
   bubble.textContent = text;
   div.appendChild(bubble);
@@ -375,7 +390,7 @@ function appendMessage(role, text, confidence, sources) {
 
 let typingCounter = 0;
 function appendTyping() {
-  const id      = "typing-" + (++typingCounter);
+  const id = "typing-" + (++typingCounter);
   const wrapper = document.createElement("div");
   wrapper.className = "msg assistant";
   wrapper.id = id;

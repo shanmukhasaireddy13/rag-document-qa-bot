@@ -204,9 +204,9 @@ export function AuthModal({ open, onOpenChange, onSuccess }: AuthModalProps) {
   }
 
   const titles: Record<View, { title: string; desc: string }> = {
-    login:  { title: "Welcome back",    desc: "Sign in to your account" },
+    login: { title: "Welcome back", desc: "Sign in to your account" },
     signup: { title: "Create an account", desc: "Join the TopDevs community" },
-    forgot: { title: "Reset password",  desc: "We'll send a reset link to your email" },
+    forgot: { title: "Reset password", desc: "We'll send a reset link to your email" },
   };
 
   return (
@@ -295,7 +295,7 @@ export function AuthModal({ open, onOpenChange, onSuccess }: AuthModalProps) {
                 </button>
               </div>
 
-              <button type="submit" disabled={formLoading} className={primaryBtn}>
+              <button type="submit" disabled={formLoading} className={primaryBtn} style={{ background: 'linear-gradient(to bottom, #ffffff, rgba(255,255,255,0.78))' }}>
                 {formLoading ? <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" /> : null}
                 Sign In
               </button>

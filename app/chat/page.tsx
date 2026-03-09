@@ -18,40 +18,41 @@ import {
   type ChatSession, type SearchResult,
 } from "@/lib/chat-history";
 
-const RAG_API    = process.env.NEXT_PUBLIC_RAG_API_URL ?? "http://localhost:8000";
-const DOCS_API   = RAG_API + "/documents";
+// Use the local Next.js API proxy to securely attach the API key
+const RAG_API = "/api/rag";
+const DOCS_API = RAG_API + "/documents";
 const UPLOAD_API = RAG_API + "/upload";
 const DELETE_API = (name: string) => `${RAG_API}/documents/${encodeURIComponent(name)}`;
 
 // ── Types ────────────────────────────────────────────────
-interface DocFile  { name: string; size_kb: number }
-interface Source   { document: string; snippet: string; score: number }
-interface Message  {
-  id:          string;
-  role:        "user" | "assistant";
-  content:     string;
-  sources?:    Source[];
+interface DocFile { name: string; size_kb: number }
+interface Source { document: string; snippet: string; score: number }
+interface Message {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  sources?: Source[];
   confidence?: "high" | "medium" | "low";
-  loading?:    boolean;
+  loading?: boolean;
 }
 
 // ── PDF Export ───────────────────────────────────────────
 async function exportAnswerPDF(
-  question:   string,
-  answer:     string,
-  sources:    Source[],
+  question: string,
+  answer: string,
+  sources: Source[],
   confidence: string,
 ) {
   const { jsPDF } = await import("jspdf");
-  const doc   = new jsPDF({ unit: "mm", format: "a4" });
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
   const pageW = doc.internal.pageSize.getWidth();
   const margin = 18;
-  const maxW   = pageW - margin * 2;
-  let   y      = 20;
+  const maxW = pageW - margin * 2;
+  let y = 20;
 
   const addText = (
-    text:  string,
-    size:  number,
+    text: string,
+    size: number,
     style: "normal" | "bold" | "italic",
     color: [number, number, number] = [30, 30, 30],
   ) => {
@@ -78,8 +79,8 @@ async function exportAnswerPDF(
 
   // Confidence pill
   const confColor: [number, number, number] =
-    confidence === "high"   ? [16, 185, 129] :
-    confidence === "medium" ? [245, 158, 11]  : [239, 68, 68];
+    confidence === "high" ? [16, 185, 129] :
+      confidence === "medium" ? [245, 158, 11] : [239, 68, 68];
   doc.setFillColor(...confColor);
   doc.roundedRect(margin, y - 4, 42, 6, 1.5, 1.5, "F");
   doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(255, 255, 255);
@@ -122,9 +123,9 @@ async function exportAnswerPDF(
 // ── Small components ─────────────────────────────────────
 function ConfidenceBadge({ level }: { level: "high" | "medium" | "low" }) {
   const map = {
-    high:   { bar: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30", dot: "bg-emerald-400", label: "High confidence" },
-    medium: { bar: "bg-amber-500/15 text-amber-400 border-amber-500/30",       dot: "bg-amber-400",   label: "Medium confidence" },
-    low:    { bar: "bg-red-500/15 text-red-400 border-red-500/30",             dot: "bg-red-400",     label: "Low confidence" },
+    high: { bar: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30", dot: "bg-emerald-400", label: "High confidence" },
+    medium: { bar: "bg-amber-500/15 text-amber-400 border-amber-500/30", dot: "bg-amber-400", label: "Medium confidence" },
+    low: { bar: "bg-red-500/15 text-red-400 border-red-500/30", dot: "bg-red-400", label: "Low confidence" },
   };
   const c = map[level];
   return (
@@ -163,7 +164,7 @@ function MessageBubble({
   msg,
   onExport,
 }: {
-  msg:      Message;
+  msg: Message;
   onExport?: (msg: Message) => void;
 }) {
   const isUser = msg.role === "user";
@@ -229,33 +230,33 @@ export default function ChatPage() {
   const router = useRouter();
 
   // ── Auth ────────────────────────────────────────────────
-  const [user,        setUser]        = React.useState<any>(null);
+  const [user, setUser] = React.useState<any>(null);
   const [authChecked, setAuthChecked] = React.useState(false);
 
   // ── Messages ────────────────────────────────────────────
   const [messages, setMessages] = React.useState<Message[]>([]);
-  const [input,    setInput]    = React.useState("");
-  const [sending,  setSending]  = React.useState(false);
+  const [input, setInput] = React.useState("");
+  const [sending, setSending] = React.useState(false);
 
   // ── Documents ───────────────────────────────────────────
-  const [docs,      setDocs]      = React.useState<DocFile[]>([]);
+  const [docs, setDocs] = React.useState<DocFile[]>([]);
   const [uploading, setUploading] = React.useState(false);
-  const [deleting,  setDeleting]  = React.useState<string | null>(null);
+  const [deleting, setDeleting] = React.useState<string | null>(null);
 
   // ── Sidebar / history ────────────────────────────────────
-  const [sidebarTab,  setSidebarTab]  = React.useState<"files" | "history">("files");
-  const [sessions,    setSessions]    = React.useState<ChatSession[]>([]);
-  const [sessionId,   setSessionId]   = React.useState<string | null>(null);
+  const [sidebarTab, setSidebarTab] = React.useState<"files" | "history">("files");
+  const [sessions, setSessions] = React.useState<ChatSession[]>([]);
+  const [sessionId, setSessionId] = React.useState<string | null>(null);
   const [loadingHist, setLoadingHist] = React.useState(false);
 
   // ── Search ────────────────────────────────────────────────
-  const [historySearch,  setHistorySearch]  = React.useState("");
-  const [searchResults,  setSearchResults]  = React.useState<SearchResult[]>([]);
-  const [isSearching,    setIsSearching]    = React.useState(false);
+  const [historySearch, setHistorySearch] = React.useState("");
+  const [searchResults, setSearchResults] = React.useState<SearchResult[]>([]);
+  const [isSearching, setIsSearching] = React.useState(false);
 
   // ── Share ─────────────────────────────────────────────────
   const [sharedSessions, setSharedSessions] = React.useState<Set<string>>(new Set());
-  const [shareCopied,    setShareCopied]    = React.useState<string | null>(null);
+  const [shareCopied, setShareCopied] = React.useState<string | null>(null);
 
   // ── Voice ─────────────────────────────────────────────────
   const [listening, setListening] = React.useState(false);
@@ -265,10 +266,10 @@ export default function ChatPage() {
   const [profileOpen, setProfileOpen] = React.useState(false);
 
   // ── Refs ────────────────────────────────────────────────
-  const bottomRef    = React.useRef<HTMLDivElement>(null);
-  const inputRef     = React.useRef<HTMLTextAreaElement>(null);
+  const bottomRef = React.useRef<HTMLDivElement>(null);
+  const inputRef = React.useRef<HTMLTextAreaElement>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
-  const profileRef   = React.useRef<HTMLDivElement>(null);
+  const profileRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     function handler(e: MouseEvent) {
@@ -309,7 +310,7 @@ export default function ChatPage() {
         setSessions(s);
       }
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
   React.useEffect(() => { fetchDocs(); }, []);
@@ -343,10 +344,10 @@ export default function ChatPage() {
     setSessionId(sid);
     const msgs = await loadMessages(sid);
     const restored: Message[] = msgs.map((m) => ({
-      id:         m.id,
-      role:       m.role as "user" | "assistant",
-      content:    m.content,
-      sources:    (m.sources as unknown as Source[]) ?? [],
+      id: m.id,
+      role: m.role as "user" | "assistant",
+      content: m.content,
+      sources: (m.sources as unknown as Source[]) ?? [],
       confidence: (m.confidence as "high" | "medium" | "low") ?? undefined,
     }));
     setMessages(restored);
@@ -374,7 +375,7 @@ export default function ChatPage() {
       await shareSession(sid);
       setSharedSessions((prev) => new Set([...prev, sid]));
       const link = `${window.location.origin}/share/${sid}`;
-      await navigator.clipboard.writeText(link).catch(() => {});
+      await navigator.clipboard.writeText(link).catch(() => { });
       setShareCopied(sid);
       setTimeout(() => setShareCopied(null), 2500);
     }
@@ -392,9 +393,9 @@ export default function ChatPage() {
     rec.continuous = false;
     rec.interimResults = true;
     rec.lang = "en-US";
-    rec.onstart  = () => setListening(true);
-    rec.onend    = () => { setListening(false); inputRef.current?.focus(); };
-    rec.onerror  = () => setListening(false);
+    rec.onstart = () => setListening(true);
+    rec.onend = () => { setListening(false); inputRef.current?.focus(); };
+    rec.onerror = () => setListening(false);
     rec.onresult = (e: any) => {
       const transcript = Array.from(e.results as any[])
         .map((r: any) => r[0].transcript).join("");
@@ -419,7 +420,7 @@ export default function ChatPage() {
     const form = new FormData();
     form.append("file", file);
     try {
-      const res  = await fetch(UPLOAD_API, { method: "POST", body: form });
+      const res = await fetch(UPLOAD_API, { method: "POST", body: form });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail ?? "Upload failed");
       setDocs(data.documents ?? []);
@@ -434,7 +435,7 @@ export default function ChatPage() {
   async function handleDelete(name: string) {
     setDeleting(name);
     try {
-      const res  = await fetch(DELETE_API(name), { method: "DELETE" });
+      const res = await fetch(DELETE_API(name), { method: "DELETE" });
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail ?? "Delete failed");
       setDocs(data.documents ?? []);
@@ -448,7 +449,7 @@ export default function ChatPage() {
   // ── PDF export ────────────────────────────────────────────
   function handleExport(msg: Message) {
     const idx = messages.findIndex((m) => m.id === msg.id);
-    const q   = messages.slice(0, idx).filter((m) => m.role === "user").pop();
+    const q = messages.slice(0, idx).filter((m) => m.role === "user").pop();
     exportAnswerPDF(q?.content ?? "Question", msg.content, msg.sources ?? [], msg.confidence ?? "low");
   }
 
@@ -457,8 +458,8 @@ export default function ChatPage() {
     const question = input.trim();
     if (!question || sending) return;
 
-    const userMsg: Message     = { id: Date.now().toString(), role: "user", content: question };
-    const placeholderId        = Date.now().toString() + "-ai";
+    const userMsg: Message = { id: Date.now().toString(), role: "user", content: question };
+    const placeholderId = Date.now().toString() + "-ai";
     const placeholder: Message = { id: placeholderId, role: "assistant", content: "", loading: true };
 
     setMessages((prev) => [...prev, userMsg, placeholder]);
@@ -485,9 +486,9 @@ export default function ChatPage() {
 
     try {
       const res = await fetch(RAG_API + "/ask", {
-        method:  "POST",
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify({ question, history }),
+        body: JSON.stringify({ question, history }),
       });
       if (!res.ok) throw new Error(`API error ${res.status}`);
       const data = await res.json();
@@ -531,8 +532,8 @@ export default function ChatPage() {
     );
   }
 
-  const displayName  = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "You";
-  const avatarSrc    = user ? resolveAvatar(user.id, user.user_metadata?.avatar_url) : null;
+  const displayName = user?.user_metadata?.full_name || user?.email?.split("@")[0] || "You";
+  const avatarSrc = user ? resolveAvatar(user.id, user.user_metadata?.avatar_url) : null;
   const avatarLetter = (displayName as string)[0]?.toUpperCase() ?? "U";
 
   return (
@@ -732,8 +733,8 @@ export default function ChatPage() {
                           shareCopied === s.id
                             ? "opacity-100 text-emerald-400"
                             : sharedSessions.has(s.id)
-                            ? "opacity-100 text-white/40 hover:text-amber-400"
-                            : "text-white/15 hover:text-white/50 hover:bg-white/8",
+                              ? "opacity-100 text-white/40 hover:text-amber-400"
+                              : "text-white/15 hover:text-white/50 hover:bg-white/8",
                         )}
                       >
                         {shareCopied === s.id ? <Check className="h-3 w-3" /> : <Share2 className="h-3 w-3" />}
